@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de supervisor · Fatiga Laboral</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+  <!-- LOGIN -->
+  <div id="login" class="flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-xl text-white">📊</div>
+      <h1 class="text-center text-lg font-bold">Panel de supervisor</h1>
+      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Ingresa la clave de acceso</p>
+      <input id="pwd" type="password" placeholder="Clave" autofocus
+             class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+      <div id="loginErr" class="mt-2 hidden text-sm text-red-600"></div>
+      <button id="btnLogin" class="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700">Entrar</button>
+      <a href="index.html" class="mt-4 block text-center text-sm text-slate-400 hover:underline">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hidden">
+    <header class="border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div>
+          <h1 class="font-bold">Panel de fatiga laboral</h1>
+          <p class="text-xs text-slate-500">Resultados del test diario</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="kiosco.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Llenar test</a>
+          <button id="btnSalir" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <!-- Filtros -->
+      <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Fecha</label>
+          <input id="fFecha" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Semáforo</label>
+          <select id="fSem" class="rounded-xl border border-slate-300 px-3 py-2">
+            <option value="">Todos</option><option>VERDE</option><option>AMARILLO</option><option>ROJO</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Turno</label>
+          <select id="fTurno" class="rounded-xl border border-slate-300 px-3 py-2">
+            <option value="">Todos</option><option>Matutino</option><option>Vespertino</option>
+            <option>Nocturno</option><option>Mixto</option><option>12x12</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Departamento</label>
+          <input id="fDepto" placeholder="Todos" class="w-36 rounded-xl border border-slate-300 px-3 py-2" />
+        </div>
+        <div class="flex-1 min-w-[180px]">
+          <label class="mb-1 block text-xs font-medium text-slate-500">Buscar</label>
+          <input id="fQ" placeholder="Nombre o No. de empleado" class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+        </div>
+        <button id="fAplicar" class="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white hover:bg-slate-900">Aplicar</button>
+        <button id="fCsv" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Exportar CSV</button>
+        <button id="fLimpiar" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Hoy</button>
+      </div>
+
+      <!-- Tarjetas resumen -->
+      <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <div class="text-xs font-medium uppercase text-slate-400">Total</div>
+          <div id="cTotal" class="mt-1 text-3xl font-black">0</div>
+        </div>
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div class="text-xs font-medium uppercase text-emerald-600">Verde</div>
+          <div id="cVerde" class="mt-1 text-3xl font-black text-emerald-700">0</div>
+        </div>
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <div class="text-xs font-medium uppercase text-amber-600">Amarillo</div>
+          <div id="cAmarillo" class="mt-1 text-3xl font-black text-amber-700">0</div>
+        </div>
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+          <div class="text-xs font-medium uppercase text-red-600">Rojo</div>
+          <div id="cRojo" class="mt-1 text-3xl font-black text-red-700">0</div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <div class="text-xs font-medium uppercase text-slate-400">⚠ Críticas (2 pts)</div>
+          <div id="cCriticas" class="mt-1 text-3xl font-black text-slate-800">0</div>
+        </div>
+      </div>
+
+      <!-- Patron repetido -->
+      <div id="patronBox" class="mb-5 hidden rounded-2xl border border-red-200 bg-red-50 p-4">
+        <h3 class="mb-2 text-sm font-bold text-red-700">🔁 Patrón repetido (2+ días en amarillo/rojo en la última semana)</h3>
+        <div id="patronLista" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="px-4 py-3">Trabajador</th>
+              <th class="px-4 py-3">No. Emp.</th>
+              <th class="px-4 py-3">Depto / Puesto</th>
+              <th class="px-4 py-3">Turno</th>
+              <th class="px-4 py-3 text-center">Pts</th>
+              <th class="px-4 py-3">Semáforo</th>
+              <th class="px-4 py-3">Jornada extra</th>
+              <th class="px-4 py-3">Hora</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+        </table>
+        <div id="empty" class="hidden px-4 py-12 text-center text-sm text-slate-400">Sin registros para los filtros seleccionados.</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL detalle -->
+  <div id="modal" class="hidden fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4">
+    <div class="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <h3 class="font-bold">Detalle del test</h3>
+        <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+      <div id="modalBody" class="p-5"></div>
+    </div>
+  </div>
+
+  <script>
+    let TESTS = [];
+
+    function showPanel() {
+      document.getElementById("login").classList.add("hidden");
+      document.getElementById("panel").classList.remove("hidden");
+      document.getElementById("fFecha").value = hoyISO();
+      cargar();
+    }
+
+    document.getElementById("btnLogin").addEventListener("click", async () => {
+      const pwd = document.getElementById("pwd").value;
+      try {
+        await api("/login", { method: "POST", token: pwd });
+        setToken(pwd);
+        showPanel();
+      } catch (e) {
+        const err = document.getElementById("loginErr");
+        err.textContent = e.message; err.classList.remove("hidden");
+      }
+    });
+    document.getElementById("pwd").addEventListener("keydown", e => { if (e.key === "Enter") document.getElementById("btnLogin").click(); });
+    document.getElementById("btnSalir").addEventListener("click", () => { clearToken(); location.reload(); });
+
+    function filtros() {
+      const p = new URLSearchParams();
+      const f = document.getElementById("fFecha").value;
+      if (f) p.set("fecha", f);
+      const sem = document.getElementById("fSem").value; if (sem) p.set("semaforo", sem);
+      const tur = document.getElementById("fTurno").value; if (tur) p.set("turno", tur);
+      const dep = document.getElementById("fDepto").value.trim(); if (dep) p.set("departamento", dep);
+      const q = document.getElementById("fQ").value.trim(); if (q) p.set("q", q);
+      return p;
+    }
+
+    async function cargar() {
+      const fecha = document.getElementById("fFecha").value || hoyISO();
+      try {
+        const [tests, resumen] = await Promise.all([
+          api("/tests?" + filtros().toString(), { token: getToken() }),
+          api("/resumen?fecha=" + fecha, { token: getToken() }),
+        ]);
+        TESTS = tests;
+        renderResumen(resumen);
+        renderTabla();
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
+        else toast(e.message, "error");
+      }
+    }
+
+    function renderResumen(r) {
+      document.getElementById("cTotal").textContent = r.total;
+      document.getElementById("cVerde").textContent = r.verde;
+      document.getElementById("cAmarillo").textContent = r.amarillo;
+      document.getElementById("cRojo").textContent = r.rojo;
+      document.getElementById("cCriticas").textContent = r.criticas_2pts;
+      const box = document.getElementById("patronBox");
+      const lista = document.getElementById("patronLista");
+      if (r.patron_repetido && r.patron_repetido.length) {
+        box.classList.remove("hidden");
+        lista.innerHTML = r.patron_repetido.map(p =>
+          `<span class="rounded-full bg-white px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-red-200">
+             ${p.nombre} · ${p.dias} días</span>`).join("");
+      } else {
+        box.classList.add("hidden");
+      }
+    }
+
+    function renderTabla() {
+      const tb = document.getElementById("tbody");
+      document.getElementById("empty").classList.toggle("hidden", TESTS.length > 0);
+      tb.innerHTML = TESTS.map(t => `
+        <tr class="cursor-pointer hover:bg-slate-50" onclick="verDetalle(${t.id_test})">
+          <td class="px-4 py-3 font-medium">${t.nombre_completo}</td>
+          <td class="px-4 py-3 text-slate-500">${t.num_empleado ?? "—"}</td>
+          <td class="px-4 py-3 text-slate-500">${t.departamento ?? "—"}${t.puesto ? " / " + t.puesto : ""}</td>
+          <td class="px-4 py-3 text-slate-500">${t.turno ?? "—"}</td>
+          <td class="px-4 py-3 text-center font-bold">${t.puntaje_total}${t.critica_con_2pts ? ' <span title="Crítica con 2 pts" class="text-red-500">⚠</span>' : ""}</td>
+          <td class="px-4 py-3">${badgeSemaforo(t.semaforo)}</td>
+          <td class="px-4 py-3">
+            <span class="rounded-md px-2 py-0.5 text-xs font-semibold ${t.jornada_extra === "PUEDE" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}">
+              ${t.jornada_extra === "PUEDE" ? "Puede" : "NO debe"}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-slate-400">${(t.creado_en || "").slice(11, 16)}</td>
+        </tr>`).join("");
+    }
+
+    async function verDetalle(id) {
+      try {
+        const d = await api("/tests/" + id, { token: getToken() });
+        const s = SEMAFORO[d.semaforo];
+        document.getElementById("modalBody").innerHTML = `
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <div class="text-lg font-bold">${d.nombre_completo}</div>
+              <div class="text-sm text-slate-500">${d.num_empleado ? "No. " + d.num_empleado + " · " : ""}${d.departamento ?? ""} ${d.puesto ? "· " + d.puesto : ""}</div>
+              <div class="text-sm text-slate-500">${d.fecha} ${d.turno ? "· " + d.turno : ""} ${d.hora_entrada ? "· entrada " + d.hora_entrada : ""}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-3xl font-black ${s.text}">${d.puntaje_total}<span class="text-sm text-slate-400">/20</span></div>
+              <div>${badgeSemaforo(d.semaforo)}</div>
+            </div>
+          </div>
+          ${d.critica_con_2pts ? `<div class="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">⚠ Pregunta(s) crítica(s) con 2 puntos: ${d.criticas_con_2pts.join(", ")} → NO debe exponerse a jornada extra.</div>` : ""}
+          <div class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">${d.recomendacion}</div>
+          <table class="mt-4 w-full text-sm">
+            <thead class="text-left text-xs uppercase text-slate-400"><tr><th class="py-1">#</th><th class="py-1">Pregunta</th><th class="py-1">Respuesta</th><th class="py-1 text-center">Pts</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              ${d.respuestas.map(r => `<tr>
+                <td class="py-1.5 text-slate-400">${r.id_pregunta}${r.critica ? ' <span class="text-red-500">⚠</span>' : ""}</td>
+                <td class="py-1.5 pr-3">${r.texto}</td>
+                <td class="py-1.5 pr-3 text-slate-600">${r.opcion}</td>
+                <td class="py-1.5 text-center font-bold">${r.valor}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+          ${d.accion_tomada ? `<div class="mt-3 text-sm"><span class="font-semibold">Acción/observaciones:</span> ${d.accion_tomada}</div>` : ""}
+          ${d.observaciones ? `<div class="mt-1 text-sm"><span class="font-semibold">Observaciones:</span> ${d.observaciones}</div>` : ""}
+          ${d.firma_trabajador ? `<div class="mt-1 text-sm"><span class="font-semibold">Firma:</span> ${d.firma_trabajador}</div>` : ""}
+          ${d.firma_imagen ? `<div class="mt-2"><div class="text-xs font-semibold text-slate-500">Firma del trabajador</div><img src="${d.firma_imagen}" alt="Firma" class="mt-1 h-24 rounded-lg border border-slate-200 bg-white"></div>` : ""}
+          ${d.validador_nombre ? `<div class="mt-1 text-sm"><span class="font-semibold">Valida:</span> ${d.validador_nombre}</div>` : ""}
+          ${d.id_usuario ? `<button onclick="verHistorial(${d.id_usuario},'${d.nombre_completo.replace(/'/g, "")}')" class="mt-4 text-sm font-medium text-indigo-600 hover:underline">Ver historial del trabajador →</button>` : ""}`;
+        document.getElementById("modal").classList.remove("hidden");
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    async function verHistorial(idUsuario, nombre) {
+      try {
+        const h = await api(`/empleados/${idUsuario}/historial`, { token: getToken() });
+        document.getElementById("modalBody").innerHTML = `
+          <button onclick="cerrarModal()" class="mb-3 text-sm text-slate-500 hover:underline">← Volver</button>
+          <h3 class="mb-3 text-lg font-bold">Historial · ${nombre}</h3>
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-slate-400"><tr><th class="py-1">Fecha</th><th class="py-1">Pts</th><th class="py-1">Semáforo</th><th class="py-1">Jornada extra</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              ${h.map(t => `<tr><td class="py-1.5">${t.fecha}</td><td class="py-1.5 font-bold">${t.puntaje_total}</td>
+                <td class="py-1.5">${badgeSemaforo(t.semaforo)}</td>
+                <td class="py-1.5 text-slate-600">${t.jornada_extra === "PUEDE" ? "Puede" : "NO debe"}</td></tr>`).join("")}
+            </tbody>
+          </table>`;
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    function cerrarModal() { document.getElementById("modal").classList.add("hidden"); }
+    document.getElementById("modal").addEventListener("click", e => { if (e.target.id === "modal") cerrarModal(); });
+
+    document.getElementById("fAplicar").addEventListener("click", cargar);
+    document.getElementById("fLimpiar").addEventListener("click", () => {
+      document.getElementById("fFecha").value = hoyISO();
+      document.getElementById("fSem").value = "";
+      document.getElementById("fTurno").value = "";
+      document.getElementById("fDepto").value = "";
+      document.getElementById("fQ").value = "";
+      cargar();
+    });
+    document.getElementById("fQ").addEventListener("keydown", e => { if (e.key === "Enter") cargar(); });
+
+    document.getElementById("fCsv").addEventListener("click", () => {
+      const cols = ["fecha", "nombre_completo", "num_empleado", "departamento", "puesto", "turno", "puntaje_total", "semaforo", "critica_con_2pts", "jornada_extra"];
+      const head = cols.join(",");
+      const rows = TESTS.map(t => cols.map(c => `"${String(t[c] ?? "").replace(/"/g, '""')}"`).join(","));
+      const csv = "\uFEFF" + [head, ...rows].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = `fatiga_${document.getElementById("fFecha").value}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    if (getToken()) showPanel();
+  </script>
+</body>
+</html>

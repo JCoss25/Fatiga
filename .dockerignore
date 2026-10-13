@@ -1,0 +1,12 @@
+.env
+.env.example
+.git
+.gitignore
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.log
+deploy/AWS_DEPLOY.md
+README.md
+run_local.ps1

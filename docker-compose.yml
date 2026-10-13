@@ -1,0 +1,13 @@
+# Ejecuta la app en local con Docker (si tienes Docker instalado).
+# Uso:  docker compose up --build
+#       luego abre http://localhost:8000
+services:
+  fatiga:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: kogn1v1s-fatiga:local
+    env_file: .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped

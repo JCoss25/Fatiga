@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Llenar test · Fatiga Laboral</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .opt-btn { transition: all .12s ease; }
+    .opt-btn.sel-0 { border-color:#10b981; background:#ecfdf5; }
+    .opt-btn.sel-1 { border-color:#f59e0b; background:#fffbeb; }
+    .opt-btn.sel-2 { border-color:#ef4444; background:#fef2f2; }
+    .opt-btn.sel-0 .dot, .opt-btn.sel-1 .dot, .opt-btn.sel-2 .dot { opacity:1; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+  <div id="success" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+      <div id="successIcon" class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl">✅</div>
+      <h2 class="text-xl font-bold">Test registrado</h2>
+      <p class="mt-1 text-sm text-slate-500">Los datos se guardaron correctamente.</p>
+      <div id="successBody" class="mt-5"></div>
+      <button onclick="location.reload()" class="mt-6 w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700">Nuevo test</button>
+    </div>
+  </div>
+
+  <div class="mx-auto max-w-5xl px-4 py-8">
+    <header class="mb-6 flex items-center justify-between">
+      <div>
+        <a href="index.html" class="text-sm text-slate-500 hover:underline">← Inicio</a>
+        <h1 class="text-2xl font-bold">Test diario de alertamiento por fatiga</h1>
+        <p class="text-sm text-slate-500">Llenar antes de iniciar la jornada · ~2 minutos</p>
+      </div>
+      <div class="hidden text-right sm:block">
+        <div class="text-xs uppercase tracking-wide text-slate-400">Fecha</div>
+        <div id="fechaHoy" class="font-semibold"></div>
+      </div>
+    </header>
+
+    <!-- PASO 1: Identificacion -->
+    <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs text-white">1</span>
+        Identificación del trabajador
+      </h2>
+
+      <div id="empSelected" class="hidden">
+        <div class="flex items-center gap-4 rounded-xl border border-indigo-200 bg-indigo-50 p-3">
+          <img id="empFoto" class="hidden h-12 w-12 rounded-full object-cover" alt="" />
+          <div class="min-w-0 flex-1">
+            <div id="empNombre" class="truncate font-semibold"></div>
+            <div id="empMeta" class="truncate text-sm text-slate-500"></div>
+          </div>
+          <button id="empChange" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50">Cambiar</button>
+        </div>
+      </div>
+
+      <div id="empSearchWrap">
+        <input id="empSearch" autocomplete="off" placeholder="Busca por nombre o No. de empleado…"
+               class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        <div id="empResults" class="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 empty:hidden"></div>
+        <p class="mt-3 text-xs text-slate-400">El trabajador debe existir en la lista. Si no aparece, contacta a recursos humanos.</p>
+      </div>
+    </section>
+
+    <!-- PASO 2: Preguntas -->
+    <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs text-white">2</span>
+        Cuestionario
+      </h2>
+      <p class="mb-4 text-sm text-slate-500">Marca la opción que mejor describa cómo estás hoy. <span class="font-semibold text-red-600">⚠</span> = pregunta crítica.</p>
+      <div id="preguntas" class="space-y-6"></div>
+    </section>
+
+    <!-- PASO 3: Datos de jornada -->
+    <section class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs text-white">3</span>
+        Jornada y validación
+      </h2>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Turno</label>
+          <select id="turno" class="w-full rounded-xl border border-slate-300 px-4 py-2.5">
+            <option value="">Selecciona…</option>
+            <option>Matutino</option><option>Vespertino</option>
+            <option>Nocturno</option><option>Mixto</option><option>12x12</option>
+          </select>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Hora de entrada</label>
+          <select id="horaEntrada" class="w-full rounded-xl border border-slate-300 px-4 py-2.5">
+            <option value="">Selecciona…</option>
+            <option value="06:00">6:00 AM</option>
+            <option value="08:00">8:00 AM</option>
+          </select>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="mb-1 block text-xs font-medium text-slate-500">Acción tomada / observaciones</label>
+          <textarea id="accion" rows="2" placeholder="Opcional" class="w-full rounded-xl border border-slate-300 px-4 py-2.5"></textarea>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="mb-1 block text-xs font-medium text-slate-500">Firma del trabajador</label>
+          <div id="firmaIdent" class="mb-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
+            Identifica al trabajador para habilitar la firma.
+          </div>
+          <div class="relative">
+            <canvas id="firmaCanvas"
+                    class="h-40 w-full touch-none rounded-xl border-2 border-dashed border-slate-300 bg-white"></canvas>
+            <button type="button" id="firmaLimpiar"
+                    class="absolute right-2 top-2 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs hover:bg-slate-50">Limpiar</button>
+            <span id="firmaPlaceholder"
+                  class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-slate-300">
+              Firma aquí con el dedo o el ratón
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-slate-400">La firma se guarda como imagen y queda ligada a la ficha del trabajador.</p>
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Nombre de quien valida (supervisor / salud ocupacional)</label>
+          <select id="validadorSel" class="w-full rounded-xl border border-slate-300 px-4 py-2.5">
+            <option>Fátima Susuki Gutiérrez Mendoza</option>
+            <option value="__otro__">Otro…</option>
+          </select>
+          <input id="validadorOtro" placeholder="Escribe el nombre de quien valida"
+                 class="mt-2 hidden w-full rounded-xl border border-slate-300 px-4 py-2.5" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Barra inferior fija con resultado en vivo -->
+  <div class="sticky bottom-0 border-t border-slate-200 bg-white/95 backdrop-blur">
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-4 px-4 py-3">
+      <div id="liveSem" class="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold bg-slate-100 text-slate-500">
+        <span class="h-3 w-3 rounded-full bg-slate-300"></span><span>Sin semáforo</span>
+      </div>
+      <div class="text-sm text-slate-500">
+        Puntaje <span id="livePuntaje" class="font-bold text-slate-800">0</span>/20 ·
+        <span id="liveAnswered" class="font-semibold">0</span>/10 respondidas
+      </div>
+      <div id="liveExtra" class="hidden text-sm font-semibold"></div>
+      <div class="ml-auto flex items-center gap-3">
+        <span id="liveCritica" class="hidden text-sm font-semibold text-red-600">⚠ Pregunta crítica con 2 pts</span>
+        <button id="btnEnviar" disabled
+                class="rounded-xl bg-indigo-600 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300">
+          Guardar test
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let PREGUNTAS = [];
+    let state = {};          // {idPregunta: valor}
+    let empleado = null;     // {id_usuario, nombre_completo, ...}
+    document.getElementById("fechaHoy").textContent =
+      new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+    // ---------- Carga de preguntas ----------
+    async function cargarPreguntas() {
+      PREGUNTAS = await api("/preguntas");
+      const cont = document.getElementById("preguntas");
+      let seccion = "";
+      cont.innerHTML = "";
+      for (const p of PREGUNTAS) {
+        if (p.seccion !== seccion) {
+          seccion = p.seccion;
+          const h = document.createElement("div");
+          h.className = "pt-2 text-sm font-bold text-indigo-700";
+          h.textContent = seccion;
+          cont.appendChild(h);
+        }
+        const card = document.createElement("div");
+        card.className = "rounded-xl border border-slate-200 p-4";
+        card.innerHTML = `
+          <div class="mb-3 flex gap-2">
+            <span class="font-bold text-slate-400">${p.id_pregunta}.</span>
+            <p class="font-medium">${p.texto} ${p.critica ? '<span class="text-red-600" title="Pregunta crítica">⚠</span>' : ""}</p>
+          </div>
+          <div class="grid gap-2 sm:grid-cols-3">
+            ${p.opciones.map((op, i) => `
+              <button type="button" data-q="${p.id_pregunta}" data-v="${i}"
+                class="opt-btn relative rounded-xl border-2 border-slate-200 px-3 py-3 text-left text-sm hover:border-slate-300">
+                <span class="dot absolute right-2 top-2 h-2.5 w-2.5 rounded-full opacity-0 ${i===0?'bg-emerald-500':i===1?'bg-amber-500':'bg-red-500'}"></span>
+                <span class="mb-1 inline-block rounded-md bg-slate-100 px-1.5 text-xs font-bold text-slate-500">${i} pt${i===1?"s":""}</span>
+                <div class="text-slate-700">${op}</div>
+              </button>`).join("")}
+          </div>`;
+        cont.appendChild(card);
+      }
+      cont.addEventListener("click", (e) => {
+        const btn = e.target.closest(".opt-btn");
+        if (!btn) return;
+        const q = btn.dataset.q, v = Number(btn.dataset.v);
+        state[q] = v;
+        document.querySelectorAll(`.opt-btn[data-q="${q}"]`).forEach(b => {
+          b.classList.remove("sel-0", "sel-1", "sel-2");
+        });
+        btn.classList.add("sel-" + v);
+        actualizar();
+      });
+    }
+
+    // ---------- Resultado en vivo ----------
+    function actualizar() {
+      const vals = Object.values(state);
+      const answered = vals.length;
+      const total = vals.reduce((a, b) => a + b, 0);
+      const criticas2 = PREGUNTAS.filter(p => p.critica && state[p.id_pregunta] === 2).map(p => p.id_pregunta);
+      const sem = total <= 5 ? "VERDE" : total <= 10 ? "AMARILLO" : "ROJO";
+      const puedeExtra = sem === "VERDE" && criticas2.length === 0;
+
+      document.getElementById("livePuntaje").textContent = total;
+      document.getElementById("liveAnswered").textContent = answered;
+
+      const s = SEMAFORO[sem];
+      const liveSem = document.getElementById("liveSem");
+      liveSem.className = `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold ${answered ? s.bg + " " + s.text : "bg-slate-100 text-slate-500"}`;
+      liveSem.innerHTML = `<span class="h-3 w-3 rounded-full ${answered ? s.dot : "bg-slate-300"}"></span><span>${answered ? s.label : "Sin semáforo"}</span>`;
+
+      const liveExtra = document.getElementById("liveExtra");
+      if (answered === 10) {
+        liveExtra.classList.remove("hidden");
+        liveExtra.className = `text-sm font-semibold ${puedeExtra ? "text-emerald-600" : "text-red-600"}`;
+        liveExtra.textContent = puedeExtra ? "Jornada extra: puede exponerse" : "Jornada extra: NO debe exponerse";
+      } else {
+        liveExtra.classList.add("hidden");
+      }
+
+      document.getElementById("liveCritica").classList.toggle("hidden", criticas2.length === 0);
+      document.getElementById("btnEnviar").disabled = !(answered === 10 && empleado && hayFirma);
+    }
+
+    // ---------- Identificacion ----------
+    function seleccionarEmpleado(e) {
+      empleado = e;
+      document.getElementById("empSearchWrap").classList.add("hidden");
+      document.getElementById("empSelected").classList.remove("hidden");
+      document.getElementById("empNombre").textContent = e.nombre_completo;
+      document.getElementById("empMeta").textContent =
+        [e.num_empleado ? "No. " + e.num_empleado : null, e.puesto, e.departamento].filter(Boolean).join(" · ");
+      const foto = document.getElementById("empFoto");
+      if (e.foto_url) { foto.src = e.foto_url; foto.classList.remove("hidden"); } else { foto.classList.add("hidden"); }
+
+      // Habilitar firma ligada a la identidad
+      limpiarFirma();
+      document.getElementById("firmaIdent").innerHTML =
+        `Firmando como <b>${e.nombre_completo}</b>` +
+        (e.num_empleado ? ` · No. ${e.num_empleado}` : "") +
+        ` · ficha #${e.id_usuario}`;
+      actualizar();
+    }
+
+    document.getElementById("empChange").addEventListener("click", () => {
+      empleado = null;
+      document.getElementById("empSelected").classList.add("hidden");
+      document.getElementById("empSearchWrap").classList.remove("hidden");
+      document.getElementById("empResults").innerHTML = "";
+      limpiarFirma();
+      document.getElementById("firmaIdent").textContent = "Identifica al trabajador para habilitar la firma.";
+      actualizar();
+    });
+
+    function resaltar(texto, q) {
+      texto = texto == null ? "" : String(texto);
+      if (!q) return texto;
+      const i = texto.toLowerCase().indexOf(q.toLowerCase());
+      if (i < 0) return texto;
+      return texto.slice(0, i) +
+        `<mark class="rounded bg-yellow-200 px-0.5">${texto.slice(i, i + q.length)}</mark>` +
+        texto.slice(i + q.length);
+    }
+
+    const search = document.getElementById("empSearch");
+    let tmr;
+    search.addEventListener("input", () => {
+      clearTimeout(tmr);
+      const q = search.value.trim();
+      const cont = document.getElementById("empResults");
+      if (q.length < 1) { cont.innerHTML = ""; return; }
+      tmr = setTimeout(async () => {
+        try {
+          const rows = await api("/empleados?q=" + encodeURIComponent(q));
+          if (!rows.length) {
+            cont.innerHTML = `<div class="px-3 py-3 text-sm text-slate-400">Sin coincidencias para “${q}”.</div>`;
+            return;
+          }
+          cont.innerHTML =
+            `<div class="bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-500">${rows.length} coincidencia${rows.length > 1 ? "s" : ""}</div>` +
+            rows.map(e => `
+            <button type="button" class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-slate-50"
+                    data-emp='${JSON.stringify(e).replace(/'/g, "&#39;")}'>
+              ${e.foto_url ? `<img src="${e.foto_url}" class="h-9 w-9 rounded-full object-cover">` : `<div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs">👤</div>`}
+              <span class="min-w-0 flex-1">
+                <span class="block truncate font-medium">${resaltar(e.nombre_completo, q)}</span>
+                <span class="block truncate text-xs text-slate-500">
+                  ${e.num_empleado ? "No. " + resaltar(e.num_empleado, q) + " · " : ""}${resaltar(e.puesto || "", q)}${e.departamento ? " · " + resaltar(e.departamento, q) : ""}
+                </span>
+                ${e.coincide_en && e.coincide_en.length ? `<span class="mt-0.5 inline-block rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-600">coincide en: ${e.coincide_en.join(", ")}</span>` : ""}
+              </span>
+            </button>`).join("");
+        } catch (err) { toast(err.message, "error"); }
+      }, 200);
+    });
+
+    document.getElementById("empResults").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("button[data-emp]");
+      if (btn) seleccionarEmpleado(JSON.parse(btn.dataset.emp));
+    });
+
+    // ---------- Modulo de firma (dibujo con dedo o raton) ----------
+    const firmaCanvas = document.getElementById("firmaCanvas");
+    const firmaCtx = firmaCanvas.getContext("2d");
+    let firmando = false, hayFirma = false;
+
+    function ajustarCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = firmaCanvas.getBoundingClientRect();
+      firmaCanvas.width = Math.max(1, Math.round(rect.width * ratio));
+      firmaCanvas.height = Math.max(1, Math.round(rect.height * ratio));
+      firmaCtx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      firmaCtx.lineWidth = 2.2;
+      firmaCtx.lineCap = "round";
+      firmaCtx.lineJoin = "round";
+      firmaCtx.strokeStyle = "#1e293b";
+    }
+
+    function limpiarFirma() {
+      firmaCtx.clearRect(0, 0, firmaCanvas.width, firmaCanvas.height);
+      hayFirma = false;
+      document.getElementById("firmaPlaceholder").classList.remove("hidden");
+    }
+
+    function posFirma(ev) {
+      const rect = firmaCanvas.getBoundingClientRect();
+      return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+    }
+
+    firmaCanvas.addEventListener("pointerdown", (ev) => {
+      if (!empleado) { toast("Primero identifica al trabajador de la lista.", "error"); return; }
+      ev.preventDefault();
+      firmando = true;
+      try { firmaCanvas.setPointerCapture(ev.pointerId); } catch (_) {}
+      const p = posFirma(ev);
+      firmaCtx.beginPath();
+      firmaCtx.moveTo(p.x, p.y);
+    });
+    firmaCanvas.addEventListener("pointermove", (ev) => {
+      if (!firmando) return;
+      ev.preventDefault();
+      const p = posFirma(ev);
+      firmaCtx.lineTo(p.x, p.y);
+      firmaCtx.stroke();
+      if (!hayFirma) {
+        hayFirma = true;
+        document.getElementById("firmaPlaceholder").classList.add("hidden");
+        actualizar();
+      }
+    });
+    ["pointerup", "pointerleave", "pointercancel"].forEach((evt) =>
+      firmaCanvas.addEventListener(evt, () => { firmando = false; })
+    );
+    document.getElementById("firmaLimpiar").addEventListener("click", () => { limpiarFirma(); actualizar(); });
+
+    ajustarCanvas();
+    window.addEventListener("resize", () => { ajustarCanvas(); limpiarFirma(); actualizar(); });
+
+    // Selector de quien valida (Fátima por defecto, u "Otro" escrito a mano)
+    document.getElementById("validadorSel").addEventListener("change", (ev) => {
+      const esOtro = ev.target.value === "__otro__";
+      const otro = document.getElementById("validadorOtro");
+      otro.classList.toggle("hidden", !esOtro);
+      if (esOtro) otro.focus();
+    });
+
+    // ---------- Envio ----------
+    document.getElementById("btnEnviar").addEventListener("click", async () => {
+      const respuestas = Object.entries(state).map(([k, v]) => ({ id_pregunta: Number(k), valor: v }));
+      if (respuestas.length !== 10) return toast("Responde las 10 preguntas.", "error");
+      if (!empleado) return toast("Identifica al trabajador de la lista.", "error");
+      if (!hayFirma) return toast("Falta la firma del trabajador.", "error");
+
+      const payload = {
+        id_usuario: empleado.id_usuario,
+        nombre_completo: empleado.nombre_completo,
+        turno: document.getElementById("turno").value || null,
+        hora_entrada: document.getElementById("horaEntrada").value || null,
+        respuestas,
+        accion_tomada: document.getElementById("accion").value || null,
+        firma_trabajador: empleado.nombre_completo,
+        firma_imagen: firmaCanvas.toDataURL("image/png"),
+        validador_nombre: (document.getElementById("validadorSel").value === "__otro__"
+          ? (document.getElementById("validadorOtro").value.trim() || null)
+          : document.getElementById("validadorSel").value),
+      };
+      try {
+        const res = await api("/tests", { method: "POST", body: payload });
+        mostrarExito(res);
+      } catch (err) { toast(err.message, "error"); }
+    });
+
+    function mostrarExito(res) {
+      const s = SEMAFORO[res.semaforo];
+      document.getElementById("successIcon").className =
+        `mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full text-3xl ${s.bg}`;
+      document.getElementById("successIcon").textContent = res.semaforo === "ROJO" ? "🚨" : res.semaforo === "AMARILLO" ? "⚠️" : "✅";
+      document.getElementById("successBody").innerHTML = `
+        <div class="text-3xl font-black ${s.text}">${res.puntaje_total} <span class="text-base font-medium text-slate-400">/ 20</span></div>
+        <div class="mt-1">${badgeSemaforo(res.semaforo)}</div>
+        <p class="mt-3 text-sm text-slate-600">${res.recomendacion}</p>
+        ${res.critica_con_2pts ? `<p class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">⚠ Hubo una pregunta crítica con 2 puntos → NO debe exponerse a jornada extra.</p>` : ""}
+        <p class="mt-2 text-sm font-semibold ${res.jornada_extra === "PUEDE" ? "text-emerald-600" : "text-red-600"}">
+          Jornada extra: ${res.jornada_extra === "PUEDE" ? "puede exponerse" : "NO debe exponerse"}
+        </p>`;
+      document.getElementById("success").classList.remove("hidden");
+    }
+
+    cargarPreguntas().catch(e => toast(e.message, "error"));
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Test de Alertamiento por Fatiga Laboral</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+  <main class="mx-auto max-w-3xl px-6 py-14">
+    <header class="mb-10 text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg">⚕</div>
+      <h1 class="text-3xl font-bold tracking-tight">Test de Alertamiento por Fatiga Laboral</h1>
+      <p class="mt-2 text-slate-500">Herramienta de tamizaje diario · Kogn1v1s</p>
+    </header>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      <a href="kiosco.html"
+         class="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-xl">📝</div>
+        <h2 class="text-lg font-semibold">Llenar el test</h2>
+        <p class="mt-1 text-sm text-slate-500">Modo kiosco: el trabajador responde las 10 preguntas y obtiene su semáforo.</p>
+        <span class="mt-4 inline-block text-sm font-medium text-indigo-600 group-hover:underline">Comenzar →</span>
+      </a>
+
+      <a href="panel.html"
+         class="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl">📊</div>
+        <h2 class="text-lg font-semibold">Panel de supervisor</h2>
+        <p class="mt-1 text-sm text-slate-500">Consulta resultados del día, filtros, historial y alertas de patrón repetido.</p>
+        <span class="mt-4 inline-block text-sm font-medium text-indigo-600 group-hover:underline">Entrar →</span>
+      </a>
+    </div>
+
+    <p class="mt-10 text-center text-xs text-slate-400">
+      Herramienta de tamizaje basada en autorreporte; no es un diagnóstico médico.
+    </p>
+  </main>
+</body>
+</html>
