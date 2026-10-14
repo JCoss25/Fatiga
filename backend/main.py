@@ -23,6 +23,16 @@ CLOUDFRONT_BASE = "https://dvctlemkfvc4i.cloudfront.net/"
 app = FastAPI(title="Test de Fatiga Laboral")
 
 
+@app.middleware("http")
+async def sin_cache_frontend(request, call_next):
+    """Evita que el navegador muestre versiones viejas del HTML/JS en cache."""
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.endswith((".html", ".js", ".css")):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
 # --------------------------------------------------------------------------
 # Utilidades
 # --------------------------------------------------------------------------
@@ -296,16 +306,27 @@ def detalle_test(id_test: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/resumen", dependencies=[Depends(require_admin)])
-def resumen(fecha: Optional[str] = None, db: Session = Depends(get_db)):
-    """Totales del dia + patron repetido en los ultimos 7 dias."""
-    fecha = fecha or date.today().isoformat()
+def resumen(
+    fecha: Optional[str] = None,
+    desde: Optional[str] = None,
+    hasta: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Totales en un rango de fechas (desde–hasta) + patron repetido en el rango."""
+    if not desde and not hasta:
+        desde = hasta = fecha or date.today().isoformat()
+    else:
+        desde = desde or hasta
+        hasta = hasta or desde
+    if desde > hasta:
+        desde, hasta = hasta, desde
 
     rows = db.execute(
         text(
             "SELECT semaforo, COUNT(*), SUM(critica_con_2pts) "
-            "FROM fatiga_tests WHERE fecha = :f GROUP BY semaforo"
+            "FROM fatiga_tests WHERE fecha BETWEEN :d1 AND :d2 GROUP BY semaforo"
         ),
-        {"f": fecha},
+        {"d1": desde, "d2": hasta},
     ).all()
     conteo = {"VERDE": 0, "AMARILLO": 0, "ROJO": 0}
     criticas = 0
@@ -313,22 +334,23 @@ def resumen(fecha: Optional[str] = None, db: Session = Depends(get_db)):
         conteo[sem] = int(n)
         criticas += int(cr or 0)
 
-    # Patron repetido: empleados con 2+ dias (en 7 dias) en amarillo/rojo.
-    desde = (date.fromisoformat(fecha) - timedelta(days=6)).isoformat()
+    # Patron repetido: empleados con 2+ dias en amarillo/rojo dentro del rango.
     patron = db.execute(
         text(
             "SELECT COALESCE(id_usuario, -1) uid, COALESCE(num_empleado, -1) ne, "
             "       MAX(nombre_completo) nombre, COUNT(DISTINCT fecha) dias "
             "FROM fatiga_tests "
-            "WHERE fecha BETWEEN :d1 AND :f AND semaforo IN ('AMARILLO','ROJO') "
+            "WHERE fecha BETWEEN :d1 AND :d2 AND semaforo IN ('AMARILLO','ROJO') "
             "GROUP BY COALESCE(id_usuario, -1), COALESCE(num_empleado, -1) "
             "HAVING dias >= 2 ORDER BY dias DESC LIMIT 50"
         ),
-        {"d1": desde, "f": fecha},
+        {"d1": desde, "d2": hasta},
     ).all()
 
     return {
-        "fecha": fecha,
+        "desde": desde,
+        "hasta": hasta,
+        "fecha": hasta,
         "total": sum(conteo.values()),
         "verde": conteo["VERDE"],
         "amarillo": conteo["AMARILLO"],
