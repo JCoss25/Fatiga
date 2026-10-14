@@ -1,5 +1,6 @@
 /* Utilidades compartidas del frontend. */
-const API = "/api";
+// Base relativa: funciona servido en la raiz (/) o bajo un prefijo (p.ej. /fatiga/).
+const API = "api";
 
 async function api(path, { method = "GET", body, token } = {}) {
   const headers = { "Content-Type": "application/json" };
