@@ -67,7 +67,7 @@ No se modifica ninguna tabla existente.
 
 **Día a día (lo normal):** doble clic en **`start_server.cmd`**.
 Levanta la app en segundo plano (no se cae al cerrar la ventana) y abre el
-navegador en `http://127.0.0.1:8000`. Para apagarla: **`stop_server.cmd`**.
+navegador en `http://127.0.0.1:8010`. Para apagarla: **`stop_server.cmd`**.
 
 **Primera vez / tras cambiar dependencias:** doble clic en **`run_local.cmd`**
 (crea el entorno virtual, instala dependencias y deja la app corriendo en esa
@@ -86,7 +86,7 @@ ventana; no la cierres mientras la uses).
 ```powershell
 python -m venv $env:USERPROFILE\.venvs\fatiga
 & "$env:USERPROFILE\.venvs\fatiga\Scripts\python.exe" -m pip install -r requirements.txt
-& "$env:USERPROFILE\.venvs\fatiga\Scripts\python.exe" -m uvicorn backend.main:app --reload
+& "$env:USERPROFILE\.venvs\fatiga\Scripts\python.exe" -m uvicorn backend.main:app --port 8010 --reload
 ```
 
 ### Con Docker (si lo tienes instalado)
@@ -101,6 +101,16 @@ docker compose up --build
 python db/migrate.py
 ```
 
+### Si la app abre pero el kiosco o el panel no cargan
+
+1. Prueba `http://127.0.0.1:8010/api/ping`: debe responder `{"ok":true,"app":"fatiga"}` aunque la base esté caída.
+2. Prueba `http://127.0.0.1:8010/api/health`:
+   - `200` = base conectada.
+   - `503` con `timed out` = tu red no está permitida en el **security group** de RDS, o la instancia está detenida. El SG solo acepta ciertas IPs; agrega tu IP actual como `/32` (temporal) o usa VPN/bastión.
+3. El servidor local usa el puerto **8010** a propósito. El 8000 puede estar ocupado por otro proyecto (Kandy); no lo apagues desde aquí.
+4. `start_server.ps1` busca `/api/ping`, no solo el puerto; así no confunde otra app con Fatiga.
+5. `stop_server.ps1` lee `.server.pid` y verifica que el proceso sea `backend.main:app`; no mata otros proyectos.
+
 ---
 
 ## Subir a AWS
@@ -114,8 +124,13 @@ imagen con `deploy/Dockerfile` y se publica; el contenedor escucha en el puerto
 
 ## Seguridad
 
-El archivo de accesos original contiene contraseñas en texto plano y el puerto
-`3306` de RDS está abierto a Internet. Antes de ir a producción: rotar las
-contraseñas, cerrar el puerto a Internet, usar `DB_SSL=required`, guardar los
-secretos en Secrets Manager y cambiar `ADMIN_PASSWORD`. Ver checklist en
-`deploy/AWS_DEPLOY.md`.
+- El archivo `jcoss_accessKeys Fatiga.csv` del Escritorio contiene llaves AWS en
+  texto plano. **Rótalas o retíralo** después de terminar la configuración; no
+  debe quedarse ahí.
+- El security group de RDS acepta solo IPs específicas; no lo abras a
+  `0.0.0.0/0`. Para desarrollo, agrega tu IP actual como `/32` y retírala al
+  terminar; para producción, usa VPN/bastión o el conector de VPC de App Runner.
+- `DB_SSL` está en `disabled` en local. Antes de producción: `required`, rotar
+  contraseñas, mover secretos a Secrets Manager y cambiar `ADMIN_PASSWORD`.
+- `.env` no se sube al repo; `.server.pid` tampoco.
+- Checklist completo en `deploy/AWS_DEPLOY.md`.

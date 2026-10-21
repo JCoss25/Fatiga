@@ -58,10 +58,16 @@ def build_url() -> str:
     )
 
 
-connect_args = {}
+connect_args = {
+    # La app debe fallar rapido si RDS/la red no responden; el default de
+    # PyMySQL puede dejar la peticion colgada mas de 10 s.
+    "connect_timeout": 5,
+    "read_timeout": 15,
+    "write_timeout": 15,
+}
 if DB_SSL == "required":
     # TLS habilitado (sin verificacion estricta de CA).
-    connect_args = {"ssl": {"check_hostname": False}}
+    connect_args["ssl"] = {"check_hostname": False}
 
 engine = create_engine(
     build_url(),

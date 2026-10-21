@@ -11,3 +11,6 @@ node_modules/
 *.log
 # AWS
 .aws/
+
+# PID del servidor local
+.server.pid

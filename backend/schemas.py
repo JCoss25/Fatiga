@@ -69,3 +69,56 @@ class TestDetalleOut(TestOut):
     criticas_con_2pts: List[int] = []
     recomendacion: str = ""
     firma_imagen: Optional[str] = None
+
+
+# --------------------------------------------------------------------------
+# Check list de seguridad (REG-SST-25)
+# --------------------------------------------------------------------------
+class SstPreguntaOut(BaseModel):
+    id_pregunta: int
+    orden: int
+    texto: str
+
+
+class SstRespuestaIn(BaseModel):
+    n: int = Field(ge=1, le=18)
+    estado: str = Field(pattern="^(SEGURO|INSEGURO)$")
+    observacion: Optional[str] = Field(default=None, max_length=400)
+
+
+class SstAuditoriaIn(BaseModel):
+    fecha: date
+    id_usuario: int = Field(gt=0)
+    area: str = Field(min_length=2, max_length=100)
+    auditor: str = Field(min_length=2, max_length=120)
+    respuestas: List[SstRespuestaIn] = Field(min_length=18, max_length=18)
+    comentarios: Optional[str] = Field(default=None, max_length=2000)
+    firma_trabajador: str = Field(min_length=20, max_length=500000)
+    firma_auditor: str = Field(min_length=20, max_length=500000)
+
+
+class SstRespuestaOut(BaseModel):
+    n: int
+    estado: str
+    observacion: Optional[str]
+    texto: str
+
+
+class SstAuditoriaOut(BaseModel):
+    id_auditoria: int
+    fecha: date
+    area: str
+    departamento: str
+    auditado: str
+    auditor: str
+    seguras: int
+    inseguras: int
+    porcentaje: int
+    creado_en: Optional[str]
+
+
+class SstAuditoriaDetalleOut(SstAuditoriaOut):
+    comentarios: Optional[str]
+    firma_trabajador: Optional[str]
+    firma_auditor: Optional[str]
+    respuestas: List[SstRespuestaOut] = []

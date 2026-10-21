@@ -11,16 +11,18 @@ from sqlalchemy import String, or_, select, text
 from sqlalchemy.orm import Session
 
 from . import scoring
+from .auth import require_reports, role_for
 from .db import get_db
 from .models import FatigaFirma, FatigaPregunta, FatigaRespuesta, FatigaTest, Usuario
 from .schemas import PreguntaOut, TestIn, TestOut
+from .sst import router as sst_router
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "cambia_esta_clave")
 CLOUDFRONT_BASE = "https://dvctlemkfvc4i.cloudfront.net/"
 
-app = FastAPI(title="Test de Fatiga Laboral")
+app = FastAPI(title="Kogn1v1s · Fatiga y Seguridad")
+app.include_router(sst_router)
 
 
 @app.middleware("http")
@@ -36,11 +38,6 @@ async def sin_cache_frontend(request, call_next):
 # --------------------------------------------------------------------------
 # Utilidades
 # --------------------------------------------------------------------------
-def require_admin(x_admin_token: Optional[str] = Header(default=None)):
-    if x_admin_token != ADMIN_PASSWORD:
-        raise HTTPException(status_code=401, detail="Clave de supervisor incorrecta")
-
-
 def decode_img(raw) -> Optional[str]:
     """img_empleado guarda la clave relativa como bytes (ej: 'empleados/1.jpeg')."""
     if raw is None:
@@ -72,6 +69,12 @@ def parse_time(value: Optional[str]):
 # --------------------------------------------------------------------------
 # Endpoints publicos
 # --------------------------------------------------------------------------
+@app.get("/api/ping")
+def ping():
+    """Latido sin base de datos, para que el arranque local no dependa de RDS."""
+    return {"ok": True, "app": "fatiga"}
+
+
 @app.get("/api/health")
 def health(db: Session = Depends(get_db)):
     info = {"db": os.getenv("DB_NAME"), "host": os.getenv("DB_HOST")}
@@ -103,9 +106,10 @@ def preguntas(db: Session = Depends(get_db)):
 
 @app.post("/api/login")
 def login(x_admin_token: Optional[str] = Header(default=None)):
-    if x_admin_token != ADMIN_PASSWORD:
-        raise HTTPException(status_code=401, detail="Clave de supervisor incorrecta")
-    return {"ok": True}
+    role = role_for(x_admin_token)
+    if not role:
+        raise HTTPException(status_code=401, detail="Clave de reportes incorrecta")
+    return {"ok": True, "role": role}
 
 
 @app.get("/api/empleados")
@@ -235,7 +239,7 @@ def _to_out(t: FatigaTest) -> TestOut:
     )
 
 
-@app.get("/api/tests", dependencies=[Depends(require_admin)])
+@app.get("/api/tests", dependencies=[Depends(require_reports)])
 def listar_tests(
     fecha: Optional[str] = None,
     desde: Optional[str] = None,
@@ -271,7 +275,7 @@ def listar_tests(
     return [_to_out(t).model_dump() for t in rows]
 
 
-@app.get("/api/tests/{id_test}", dependencies=[Depends(require_admin)])
+@app.get("/api/tests/{id_test}", dependencies=[Depends(require_reports)])
 def detalle_test(id_test: int, db: Session = Depends(get_db)):
     t = db.get(FatigaTest, id_test)
     if not t:
@@ -305,7 +309,7 @@ def detalle_test(id_test: int, db: Session = Depends(get_db)):
     return out
 
 
-@app.get("/api/resumen", dependencies=[Depends(require_admin)])
+@app.get("/api/resumen", dependencies=[Depends(require_reports)])
 def resumen(
     fecha: Optional[str] = None,
     desde: Optional[str] = None,
@@ -363,7 +367,7 @@ def resumen(
     }
 
 
-@app.get("/api/empleados/{id_usuario}/historial", dependencies=[Depends(require_admin)])
+@app.get("/api/empleados/{id_usuario}/historial", dependencies=[Depends(require_reports)])
 def historial(id_usuario: int, limite: int = 30, db: Session = Depends(get_db)):
     rows = db.scalars(
         select(FatigaTest)

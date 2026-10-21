@@ -15,8 +15,8 @@ Write-Host "Instalando dependencias ..."
 & "$venv\Scripts\python.exe" -m pip install --quiet -r requirements.txt
 
 Write-Host ""
-Write-Host "Abriendo la aplicacion en http://127.0.0.1:8000"
+Write-Host "Abriendo la aplicacion en http://127.0.0.1:8010"
 Write-Host "(Ctrl+C para detener)"
 Write-Host ""
 
-& "$venv\Scripts\python.exe" -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+& "$venv\Scripts\python.exe" -m uvicorn backend.main:app --host 127.0.0.1 --port 8010 --reload

@@ -91,3 +91,51 @@ class FatigaFirma(Base):
     id_test: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     firma_imagen: Mapped[str] = mapped_column(Text)
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+# --------------------------------------------------------------------------
+# Check list de seguridad basada en comportamiento (REG-SST-25)
+# Modulo independiente: no modifica fatiga_*.
+# --------------------------------------------------------------------------
+class SstPregunta(Base):
+    __tablename__ = "sst_preguntas"
+
+    id_pregunta: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    orden: Mapped[int] = mapped_column(SmallInteger)
+    texto: Mapped[str] = mapped_column(String(255))
+
+
+class SstAuditoria(Base):
+    __tablename__ = "sst_auditorias"
+
+    id_auditoria: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    fecha: Mapped[date] = mapped_column(Date)
+    area: Mapped[str] = mapped_column(String(100))
+    departamento: Mapped[str] = mapped_column(String(100))
+    auditado: Mapped[str] = mapped_column(String(120))
+    auditor: Mapped[str] = mapped_column(String(120))
+    comentarios: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    seguras: Mapped[int] = mapped_column(SmallInteger)
+    inseguras: Mapped[int] = mapped_column(SmallInteger)
+    porcentaje: Mapped[int] = mapped_column(SmallInteger)
+    firma_trabajador: Mapped[str] = mapped_column(Text)
+    firma_auditor: Mapped[str] = mapped_column(Text)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    ip_origen: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+
+    respuestas: Mapped[list["SstRespuesta"]] = relationship(
+        back_populates="auditoria", cascade="all, delete-orphan"
+    )
+
+
+class SstRespuesta(Base):
+    __tablename__ = "sst_respuestas"
+
+    id_respuesta: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id_auditoria: Mapped[int] = mapped_column(BigInteger, ForeignKey("sst_auditorias.id_auditoria"))
+    n: Mapped[int] = mapped_column(SmallInteger)
+    estado: Mapped[str] = mapped_column(Enum("SEGURO", "INSEGURO"))
+    observacion: Mapped[Optional[str]] = mapped_column(String(400), nullable=True)
+
+    auditoria: Mapped["SstAuditoria"] = relationship(back_populates="respuestas")
+

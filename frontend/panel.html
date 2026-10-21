@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de supervisor · Fatiga Laboral</title>
+  <title>Panel de reportes · Fatiga y Seguridad</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="common.js"></script>
+  <script src="demo-data.js"></script>
+  <script src="demo-mode.js"></script>
   <style>body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }</style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800">
@@ -14,8 +16,8 @@
   <div id="login" class="flex min-h-screen items-center justify-center p-4">
     <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
       <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-xl text-white">📊</div>
-      <h1 class="text-center text-lg font-bold">Panel de supervisor</h1>
-      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Ingresa la clave de acceso</p>
+      <h1 class="text-center text-lg font-bold">Panel de reportes</h1>
+      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Clave de administrador o de revisor</p>
       <input id="pwd" type="password" placeholder="Clave" autofocus
              class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
       <div id="loginErr" class="mt-2 hidden text-sm text-red-600"></div>
@@ -29,17 +31,29 @@
     <header class="border-b border-slate-200 bg-white">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <div>
-          <h1 class="font-bold">Panel de fatiga laboral</h1>
-          <p class="text-xs text-slate-500">Resultados del test diario</p>
+          <h1 class="font-bold">Panel de reportes</h1>
+          <p class="text-xs text-slate-500">Fatiga y seguridad · <span id="rolLabel">—</span></p>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <a href="kiosco.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Llenar test</a>
+          <a href="sst.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Check list</a>
           <button id="btnSalir" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Salir</button>
         </div>
       </div>
     </header>
 
+    <!-- Pestañas de reportes -->
+    <div class="mx-auto max-w-6xl px-4 pt-4">
+      <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+        <button id="tabFatiga" type="button"
+                class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Fatiga</button>
+        <button id="tabSst" type="button"
+                class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Seguridad</button>
+      </div>
+    </div>
+
     <main class="mx-auto max-w-6xl px-4 py-6">
+      <div id="vistaFatiga">
       <!-- Filtros -->
       <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
         <div>
@@ -125,6 +139,77 @@
         </table>
         <div id="empty" class="hidden px-4 py-12 text-center text-sm text-slate-400">Sin registros para los filtros seleccionados.</div>
       </div>
+      </div><!-- /vistaFatiga -->
+
+      <!-- Vista Seguridad -->
+      <div id="vistaSst" class="hidden">
+        <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Desde</label>
+            <input id="fSstDesde" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Hasta</label>
+            <input id="fSstHasta" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Hallazgos</label>
+            <select id="fSstHallazgos" class="rounded-xl border border-slate-300 px-3 py-2">
+              <option value="">Todas</option>
+              <option value="true">Con hallazgos</option>
+              <option value="false">Sin hallazgos</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Área</label>
+            <input id="fSstArea" placeholder="Todas" class="w-36 rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div class="flex-1 min-w-[190px]">
+            <label class="mb-1 block text-xs font-medium text-slate-500">Buscar</label>
+            <input id="fSstQ" placeholder="Área, auditado o auditor" class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <button id="fSstAplicar" class="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white hover:bg-slate-900">Aplicar</button>
+          <button id="fSstCsv" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Exportar CSV</button>
+          <button id="fSstHoy" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Hoy</button>
+        </div>
+
+        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="text-xs font-medium uppercase text-slate-400">Auditorías</div>
+            <div id="sTotal" class="mt-1 text-3xl font-black">0</div>
+          </div>
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <div class="text-xs font-medium uppercase text-emerald-600">Conducta segura</div>
+            <div id="sPct" class="mt-1 text-3xl font-black text-emerald-700">0%</div>
+          </div>
+          <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div class="text-xs font-medium uppercase text-amber-600">Con hallazgos</div>
+            <div id="sHallazgos" class="mt-1 text-3xl font-black text-amber-700">0</div>
+          </div>
+          <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="text-xs font-medium uppercase text-slate-400">Áreas</div>
+            <div id="sAreas" class="mt-1 text-3xl font-black">0</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          <table class="w-full min-w-[760px] text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-4 py-3">Fecha</th>
+                <th class="px-4 py-3">Área / Departamento</th>
+                <th class="px-4 py-3">Auditado</th>
+                <th class="px-4 py-3">Auditor</th>
+                <th class="px-4 py-3 text-center">Seguras</th>
+                <th class="px-4 py-3 text-center">%</th>
+                <th class="px-4 py-3">Hallazgos</th>
+              </tr>
+            </thead>
+            <tbody id="tbodySst" class="divide-y divide-slate-100"></tbody>
+          </table>
+          <div id="emptySst" class="hidden px-4 py-12 text-center text-sm text-slate-400">Sin auditorías de seguridad para los filtros seleccionados.</div>
+        </div>
+      </div><!-- /vistaSst -->
     </main>
   </div>
 
@@ -132,7 +217,7 @@
   <div id="modal" class="hidden fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4">
     <div class="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-        <h3 class="font-bold">Detalle del test</h3>
+        <h3 id="modalTitle" class="font-bold">Detalle del test</h3>
         <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-700">✕</button>
       </div>
       <div id="modalBody" class="p-5"></div>
@@ -141,21 +226,29 @@
 
   <script>
     let TESTS = [];
+    let SST = [];
+    let SST_LOADED = false;
 
     function showPanel() {
       document.getElementById("login").classList.add("hidden");
       document.getElementById("panel").classList.remove("hidden");
+      const role = getRole();
+      document.getElementById("rolLabel").textContent =
+        role === "revisor" ? "revisor · solo consulta" : role === "admin" ? "administrador" : "sesión";
       const hoy = hoyISO();
       document.getElementById("fDesde").value = hoy;
       document.getElementById("fHasta").value = hoy;
+      initSstDates();
+      setTab("fatiga");
       cargar();
     }
 
     document.getElementById("btnLogin").addEventListener("click", async () => {
       const pwd = document.getElementById("pwd").value;
       try {
-        await api("/login", { method: "POST", token: pwd });
+        const r = await api("/login", { method: "POST", token: pwd });
         setToken(pwd);
+        setRole(r.role || "");
         showPanel();
       } catch (e) {
         const err = document.getElementById("loginErr");
@@ -246,6 +339,7 @@
     async function verDetalle(id) {
       try {
         const d = await api("/tests/" + id, { token: getToken() });
+        document.getElementById("modalTitle").textContent = "Detalle del test";
         const s = SEMAFORO[d.semaforo];
         document.getElementById("modalBody").innerHTML = `
           <div class="mb-4 flex items-center justify-between">
@@ -324,6 +418,178 @@
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
       const a = document.createElement("a");
       a.href = url; a.download = `fatiga_${desde}_a_${hasta}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // ======================================================================
+    // Seguridad REG-SST-25
+    // ======================================================================
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const fmtFecha = (iso) => {
+      if (!iso) return "—";
+      const [y, m, d] = String(iso).slice(0, 10).split("-");
+      return (y && m && d) ? `${d}/${m}/${y}` : iso;
+    };
+
+    function setTab(t) {
+      const fatiga = t === "fatiga";
+      document.getElementById("vistaFatiga").classList.toggle("hidden", !fatiga);
+      document.getElementById("vistaSst").classList.toggle("hidden", fatiga);
+      const active = ["bg-slate-800", "text-white"];
+      const idle = ["text-slate-500"];
+      const ft = document.getElementById("tabFatiga");
+      const st = document.getElementById("tabSst");
+      active.forEach(c => { ft.classList.toggle(c, fatiga); st.classList.toggle(c, !fatiga); });
+      idle.forEach(c => { ft.classList.toggle(c, !fatiga); st.classList.toggle(c, fatiga); });
+      if (!fatiga) {
+        initSstDates();
+        if (!SST_LOADED) cargarSst();
+      }
+    }
+
+    function initSstDates() {
+      const hoy = hoyISO();
+      const d = document.getElementById("fSstDesde");
+      const h = document.getElementById("fSstHasta");
+      if (!d.value) d.value = hoy;
+      if (!h.value) h.value = hoy;
+    }
+
+    function sstRango() {
+      let desde = document.getElementById("fSstDesde").value;
+      let hasta = document.getElementById("fSstHasta").value;
+      if (!desde && hasta) desde = hasta;
+      if (!hasta && desde) hasta = desde;
+      if (!desde && !hasta) { desde = hoyISO(); hasta = hoyISO(); }
+      if (desde > hasta) { const t = desde; desde = hasta; hasta = t; }
+      return { desde, hasta };
+    }
+
+    function sstFiltros() {
+      const p = new URLSearchParams();
+      const { desde, hasta } = sstRango();
+      p.set("desde", desde);
+      p.set("hasta", hasta);
+      const hall = document.getElementById("fSstHallazgos").value; if (hall) p.set("con_hallazgos", hall);
+      const area = document.getElementById("fSstArea").value.trim(); if (area) p.set("area", area);
+      const q = document.getElementById("fSstQ").value.trim(); if (q) p.set("q", q);
+      return p;
+    }
+
+    async function cargarSst() {
+      const { desde, hasta } = sstRango();
+      try {
+        const [rows, res] = await Promise.all([
+          api("/sst?" + sstFiltros().toString(), { token: getToken() }),
+          api(`/sst/resumen?${sstFiltros().toString()}`, { token: getToken() }),
+        ]);
+        SST = rows;
+        SST_LOADED = true;
+        document.getElementById("sTotal").textContent = res.total;
+        document.getElementById("sPct").textContent = `${res.porcentaje}%`;
+        document.getElementById("sHallazgos").textContent = res.con_hallazgos;
+        document.getElementById("sAreas").textContent = res.areas;
+        renderSstTabla();
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
+        else toast(e.message, "error");
+      }
+    }
+
+    function renderSstTabla() {
+      const tb = document.getElementById("tbodySst");
+      document.getElementById("emptySst").classList.toggle("hidden", SST.length > 0);
+      tb.innerHTML = SST.map(a => `
+        <tr class="cursor-pointer hover:bg-slate-50" onclick="verDetalleSst(${a.id_auditoria})">
+          <td class="px-4 py-3 text-slate-500">${fmtFecha(a.fecha)}</td>
+          <td class="px-4 py-3 font-medium">${esc(a.area)} <span class="text-slate-400">/ ${esc(a.departamento)}</span></td>
+          <td class="px-4 py-3">${esc(a.auditado)}</td>
+          <td class="px-4 py-3 text-slate-500">${esc(a.auditor)}</td>
+          <td class="px-4 py-3 text-center font-bold">${a.seguras}/18</td>
+          <td class="px-4 py-3 text-center font-semibold ${a.porcentaje >= 90 ? "text-emerald-700" : a.porcentaje >= 70 ? "text-amber-700" : "text-red-700"}">${a.porcentaje}%</td>
+          <td class="px-4 py-3">
+            ${a.inseguras > 0
+              ? `<span class="rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">${a.inseguras} ${a.inseguras === 1 ? "hallazgo" : "hallazgos"}</span>`
+              : '<span class="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Sin hallazgos</span>'}
+          </td>
+        </tr>`).join("");
+    }
+
+    async function verDetalleSst(id) {
+      try {
+        const d = await api("/sst/" + id, { token: getToken() });
+        document.getElementById("modalTitle").textContent = "Detalle de auditoría";
+        document.getElementById("modalBody").innerHTML = `
+          <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="text-lg font-bold">${esc(d.auditado)}</div>
+              <div class="text-sm text-slate-500">${esc(d.area)} / ${esc(d.departamento)}</div>
+              <div class="text-sm text-slate-500">${fmtFecha(d.fecha)} · Auditor: ${esc(d.auditor)}</div>
+            </div>
+            <div class="text-right">
+              <div class="text-3xl font-black">${d.seguras}<span class="text-sm font-semibold text-slate-400">/18</span></div>
+              <div class="text-sm font-semibold ${d.porcentaje >= 90 ? "text-emerald-700" : d.porcentaje >= 70 ? "text-amber-700" : "text-red-700"}">${d.porcentaje}% seguro</div>
+            </div>
+          </div>
+          <div class="mb-3 rounded-lg ${d.inseguras ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800"} px-3 py-2 text-sm font-medium">
+            ${d.seguras} de 18 conductas seguras · ${d.inseguras} ${d.inseguras === 1 ? "hallazgo" : "hallazgos"}
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 text-left text-xs uppercase text-slate-400">
+                <tr><th class="px-3 py-2">#</th><th class="px-3 py-2">Conducta</th><th class="px-3 py-2">Estado</th><th class="px-3 py-2">Observación</th></tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${d.respuestas.map(r => `<tr>
+                  <td class="px-3 py-2 text-slate-400">${r.n}</td>
+                  <td class="px-3 py-2 pr-4">${esc(r.texto)}</td>
+                  <td class="px-3 py-2">
+                    ${r.estado === "SEGURO"
+                      ? '<span class="whitespace-nowrap rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Seguro</span>'
+                      : '<span class="whitespace-nowrap rounded-md bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Inseguro</span>'}
+                  </td>
+                  <td class="px-3 py-2 text-slate-500">${r.observacion ? esc(r.observacion) : "—"}</td>
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+          ${d.comentarios ? `<div class="mt-3 text-sm"><span class="font-semibold">Comentarios:</span> ${esc(d.comentarios)}</div>` : ""}
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <div class="mb-1 text-xs font-semibold text-slate-500">Firma del trabajador evaluado</div>
+              <img src="${esc(d.firma_trabajador)}" alt="Firma del trabajador" class="h-24 w-full rounded-lg border border-slate-200 bg-white object-contain">
+            </div>
+            <div>
+              <div class="mb-1 text-xs font-semibold text-slate-500">Firma del auditor</div>
+              <img src="${esc(d.firma_auditor)}" alt="Firma del auditor" class="h-24 w-full rounded-lg border border-slate-200 bg-white object-contain">
+            </div>
+          </div>`;
+        document.getElementById("modal").classList.remove("hidden");
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    document.getElementById("tabFatiga").addEventListener("click", () => setTab("fatiga"));
+    document.getElementById("tabSst").addEventListener("click", () => setTab("sst"));
+    document.getElementById("fSstAplicar").addEventListener("click", cargarSst);
+    document.getElementById("fSstQ").addEventListener("keydown", e => { if (e.key === "Enter") cargarSst(); });
+    document.getElementById("fSstHoy").addEventListener("click", () => {
+      const hoy = hoyISO();
+      document.getElementById("fSstDesde").value = hoy;
+      document.getElementById("fSstHasta").value = hoy;
+      document.getElementById("fSstHallazgos").value = "";
+      document.getElementById("fSstArea").value = "";
+      document.getElementById("fSstQ").value = "";
+      cargarSst();
+    });
+    document.getElementById("fSstCsv").addEventListener("click", () => {
+      const { desde, hasta } = sstRango();
+      const cols = ["id_auditoria", "fecha", "area", "departamento", "auditado", "auditor", "seguras", "inseguras", "porcentaje"];
+      const head = cols.join(",");
+      const rows = SST.map(a => cols.map(c => `"${String(a[c] ?? "").replace(/"/g, '""')}"`).join(","));
+      const csv = "\uFEFF" + [head, ...rows].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const el = document.createElement("a");
+      el.href = url; el.download = `seguridad_${desde}_a_${hasta}.csv`; el.click();
       URL.revokeObjectURL(url);
     });
 

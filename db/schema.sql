@@ -108,3 +108,70 @@ ON DUPLICATE KEY UPDATE
   seccion=VALUES(seccion), orden=VALUES(orden), texto=VALUES(texto),
   critica=VALUES(critica), opcion_0=VALUES(opcion_0),
   opcion_1=VALUES(opcion_1), opcion_2=VALUES(opcion_2);
+
+-- ============================================================================
+--  CHECK LIST DE SEGURIDAD BASADA EN COMPORTAMIENTO (REG-SST-25)
+--  Modulo independiente. No modifica fatiga_* ni usuarios.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS sst_preguntas (
+  id_pregunta TINYINT UNSIGNED NOT NULL,
+  orden       TINYINT UNSIGNED NOT NULL,
+  texto       VARCHAR(255) NOT NULL,
+  PRIMARY KEY (id_pregunta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sst_auditorias (
+  id_auditoria     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  fecha            DATE NOT NULL,
+  area             VARCHAR(100) NOT NULL,
+  departamento     VARCHAR(100) NOT NULL,
+  auditado         VARCHAR(120) NOT NULL,
+  auditor          VARCHAR(120) NOT NULL,
+  comentarios      TEXT NULL,
+  seguras          TINYINT UNSIGNED NOT NULL,
+  inseguras        TINYINT UNSIGNED NOT NULL,
+  porcentaje       TINYINT UNSIGNED NOT NULL,
+  firma_trabajador MEDIUMTEXT NOT NULL,
+  firma_auditor    MEDIUMTEXT NOT NULL,
+  creado_en        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ip_origen        VARCHAR(45) NULL,
+  PRIMARY KEY (id_auditoria),
+  KEY idx_sst_fecha    (fecha),
+  KEY idx_sst_area     (area),
+  KEY idx_sst_auditado (auditado),
+  KEY idx_sst_auditor  (auditor)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sst_respuestas (
+  id_respuesta  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_auditoria  BIGINT UNSIGNED NOT NULL,
+  n             TINYINT UNSIGNED NOT NULL,
+  estado        ENUM('SEGURO','INSEGURO') NOT NULL,
+  observacion   VARCHAR(400) NULL,
+  PRIMARY KEY (id_respuesta),
+  KEY idx_sst_resp_aud (id_auditoria)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO sst_preguntas (id_pregunta, orden, texto) VALUES
+  (1,1,'Porta su EPP completo, de forma correcta y de acuerdo al riesgo de su tarea.'),
+  (2,2,'Hace uso del uniforme otorgado por la empresa de forma adecuada.'),
+  (3,3,'Reporta incidencias, actos o condiciones inseguras de inmediato a su supervisor.'),
+  (4,4,'Realiza sus actividades de acuerdo a lo establecido en su Instrucción de Trabajo y el AST.'),
+  (5,5,'Se relaciona de forma respetuosa, no realiza bromas o juegos físicos en el área de trabajo.'),
+  (6,6,'Se relaciona de forma respetuosa, no realiza bromas o juegos físicos en el área de trabajo.'),
+  (7,7,'Evita atajos o métodos no autorizados para agilizar su trabajo.'),
+  (8,8,'Conduce a velocidad adecuada de acuerdo con los flujos establecidos.'),
+  (9,9,'Sigue los métodos de conducción segura (reversa asistida, uso de claxon, etc.).'),
+  (10,10,'No usa el teléfono celular durante la operación de equipos o tareas de riesgo.'),
+  (11,11,'Adopta posturas ergonómicas al levantar cargas (espalda recta, piernas dobladas) y no excede el límite de carga permitido.'),
+  (12,12,'Hace uso de los tres puntos de apoyo al ascender o descender de un equipo, unidad o plataforma.'),
+  (13,13,'Trabaja sin exponer partes del cuerpo a zonas de pellizco o atrapamiento.'),
+  (14,14,'Verifica el estado de sus herramientas de trabajo antes de usarlas y las usa adecuadamente.'),
+  (15,15,'Mantiene su área de trabajo ordenada y libre de obstáculos en pasillos.'),
+  (16,16,'Deposita residuos y materiales en los lugares designados.'),
+  (17,17,'Participa activamente en el diálogo de seguridad / plática de arranque de turno.'),
+  (18,18,'Acepta retroalimentación de seguridad de forma receptiva y sin actitud defensiva.')
+ON DUPLICATE KEY UPDATE
+  orden=VALUES(orden), texto=VALUES(texto);
+

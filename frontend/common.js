@@ -33,7 +33,12 @@ function badgeSemaforo(sem) {
 
 function getToken() { return sessionStorage.getItem("fatiga_token") || ""; }
 function setToken(t) { sessionStorage.setItem("fatiga_token", t); }
-function clearToken() { sessionStorage.removeItem("fatiga_token"); }
+function getRole() { return sessionStorage.getItem("fatiga_role") || ""; }
+function setRole(r) { sessionStorage.setItem("fatiga_role", r || ""); }
+function clearToken() {
+  sessionStorage.removeItem("fatiga_token");
+  sessionStorage.removeItem("fatiga_role");
+}
 
 function hoyISO() {
   const d = new Date();
