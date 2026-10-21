@@ -144,7 +144,7 @@
             </div>
             <div class="relative">
               <canvas id="firmaTrabajador" class="h-36 w-full rounded-xl border-2 border-dashed border-slate-300 bg-white"></canvas>
-              <span class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-300">Firma aquí</span>
+              <span id="phTrabajador" class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-300">Firma aquí</span>
             </div>
             <p id="nombreTrabajador" class="mt-1 text-xs text-slate-500">&nbsp;</p>
           </div>
@@ -155,7 +155,7 @@
             </div>
             <div class="relative">
               <canvas id="firmaAuditor" class="h-36 w-full rounded-xl border-2 border-dashed border-slate-300 bg-white"></canvas>
-              <span class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-300">Firma aquí</span>
+              <span id="phAuditor" class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-300">Firma aquí</span>
             </div>
             <p id="nombreAuditor" class="mt-1 text-xs text-slate-500">&nbsp;</p>
           </div>
@@ -197,6 +197,12 @@
         renderPreguntas();
         $("cargando").classList.add("hidden");
         $("form").classList.remove("hidden");
+        // El formulario estaba oculto cuando se inicializaron los pads:
+        // se vuelven a medir cuando ya tienen ancho real.
+        requestAnimationFrame(() => {
+          $("firmaTrabajador")?._resize?.();
+          $("firmaAuditor")?._resize?.();
+        });
       } catch (e) {
         $("cargando").classList.add("hidden");
         const err = $("errorCatalogo");
@@ -250,6 +256,7 @@
     // ---------- Firmas ----------
     function initPad(canvas, setter) {
       const ctx = canvas.getContext("2d");
+      const ph = canvas.parentElement.querySelector("span");
       let drawing = false, last = null, ink = false;
       function resize() {
         const r = canvas.getBoundingClientRect();
@@ -260,10 +267,12 @@
         ctx.clearRect(0, 0, r.width, r.height);
         ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
         ink = false; setter("");
+        if (ph) ph.style.display = "";
       }
       function pos(ev) { const r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; }
       canvas.addEventListener("pointerdown", (ev) => {
         ev.preventDefault(); drawing = true; ink = true;
+        if (ph) ph.style.display = "none";
         try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
         last = pos(ev); ctx.beginPath(); ctx.arc(last.x, last.y, 1.2, 0, Math.PI * 2); ctx.fillStyle = "#0f172a"; ctx.fill();
       });
@@ -289,6 +298,13 @@
 
     initPad($("firmaTrabajador"), (v) => { FIRMA_TRABAJADOR = v; });
     initPad($("firmaAuditor"), (v) => { FIRMA_AUDITOR = v; });
+
+    window.addEventListener("resize", () => {
+      if ($("form").classList.contains("hidden")) return;
+      if (FIRMA_TRABAJADOR || FIRMA_AUDITOR) return;
+      $("firmaTrabajador")?._resize?.();
+      $("firmaAuditor")?._resize?.();
+    });
 
     document.querySelectorAll("[data-clear]").forEach(btn => {
       btn.addEventListener("click", () => {
