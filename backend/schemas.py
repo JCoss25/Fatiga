@@ -122,3 +122,17 @@ class SstAuditoriaDetalleOut(SstAuditoriaOut):
     firma_trabajador: Optional[str]
     firma_auditor: Optional[str]
     respuestas: List[SstRespuestaOut] = []
+
+
+class CatalogoItemOut(BaseModel):
+    id: int
+    nombre: str
+
+
+class CatalogosOut(BaseModel):
+    auditores: List[CatalogoItemOut]
+    areas: List[CatalogoItemOut]
+
+
+class CatalogoIn(BaseModel):
+    nombre: str = Field(min_length=2, max_length=120)

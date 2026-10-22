@@ -44,11 +44,15 @@
 
     <!-- Pestañas de reportes -->
     <div class="mx-auto max-w-6xl px-4 pt-4">
-      <div class="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+      <div class="inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1">
         <button id="tabFatiga" type="button"
                 class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Fatiga</button>
         <button id="tabSst" type="button"
                 class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Seguridad</button>
+        <button id="tabIndicadores" type="button"
+                class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Indicadores</button>
+        <button id="tabCatalogos" type="button"
+                class="hidden rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Catálogos</button>
       </div>
     </div>
 
@@ -210,6 +214,105 @@
           <div id="emptySst" class="hidden px-4 py-12 text-center text-sm text-slate-400">Sin auditorías de seguridad para los filtros seleccionados.</div>
         </div>
       </div><!-- /vistaSst -->
+
+      <!-- Vista Indicadores -->
+      <div id="vistaIndicadores" class="hidden">
+        <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Desde</label>
+            <input id="indDesde" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Hasta</label>
+            <input id="indHasta" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <button id="indAplicar" class="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white hover:bg-slate-900">Actualizar</button>
+          <p class="flex-1 pb-2 text-xs text-slate-400">Áreas de oportunidad del periodo, separadas por tipo de test.</p>
+        </div>
+
+        <!-- Fatiga -->
+        <section class="mb-8">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">🧠</span>
+            <div>
+              <h2 class="font-bold leading-tight">Fatiga laboral</h2>
+              <p class="text-xs text-slate-500">Dónde se concentran los semáforos amarillo/rojo y las preguntas con más puntos.</p>
+            </div>
+          </div>
+          <div id="indFatigaCards" class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4"></div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 class="text-sm font-bold text-slate-700">Departamentos con más riesgo</h3>
+              <p class="mb-4 text-xs text-slate-400">Ordenados por tests en amarillo y rojo.</p>
+              <div id="indFatigaDeptos"></div>
+            </div>
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 class="text-sm font-bold text-slate-700">Preguntas con mayor puntaje</h3>
+              <p class="mb-4 text-xs text-slate-400">Promedio de puntos por respuesta; las marcadas ⚠ son críticas.</p>
+              <div id="indFatigaPreguntas"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seguridad -->
+        <section>
+          <div class="mb-3 flex items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">🦺</span>
+            <div>
+              <h2 class="font-bold leading-tight">Seguridad · REG-SST-25</h2>
+              <p class="text-xs text-slate-500">Áreas y conductas donde se concentran los hallazgos.</p>
+            </div>
+          </div>
+          <div id="indSstCards" class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4"></div>
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 class="text-sm font-bold text-slate-700">Áreas con más hallazgos</h3>
+              <p class="mb-4 text-xs text-slate-400">Conductas inseguras acumuladas por área.</p>
+              <div id="indSstAreas"></div>
+            </div>
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 class="text-sm font-bold text-slate-700">Conductas a reforzar</h3>
+              <p class="mb-4 text-xs text-slate-400">Las 18 conductas con más registros inseguros.</p>
+              <div id="indSstConductas"></div>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-2">
+              <h3 class="text-sm font-bold text-slate-700">Desempeño por auditor</h3>
+              <p class="mb-4 text-xs text-slate-400">Cobertura y hallazgos detectados por auditor.</p>
+              <div id="indSstAuditores"></div>
+            </div>
+          </div>
+        </section>
+      </div><!-- /vistaIndicadores -->
+
+      <!-- Vista Catálogos (solo administrador) -->
+      <div id="vistaCatalogos" class="hidden">
+        <div class="mb-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+          <h2 class="text-sm font-bold text-indigo-900">Catálogos del check list REG-SST-25</h2>
+          <p class="mt-1 text-sm text-indigo-900/80">Lo que agregues aquí aparece en los desplegables de <b>Área</b> y <b>Auditor</b> del formulario de seguridad. Quitar un elemento no altera las auditorías ya guardadas.</p>
+        </div>
+        <div class="grid gap-5 lg:grid-cols-2">
+          <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 class="text-sm font-bold text-slate-700">Auditores</h3>
+            <p class="mb-3 text-xs text-slate-400">Nombres disponibles para seleccionar quién observa.</p>
+            <form id="formAuditor" class="flex gap-2">
+              <input id="nuevoAuditor" maxlength="120" placeholder="Nombre del auditor"
+                     class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2" />
+              <button class="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Agregar</button>
+            </form>
+            <div id="catAuditores" class="mt-4 divide-y divide-slate-100"></div>
+          </div>
+          <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 class="text-sm font-bold text-slate-700">Áreas</h3>
+            <p class="mb-3 text-xs text-slate-400">Áreas físicas o líneas donde se realiza la observación.</p>
+            <form id="formArea" class="flex gap-2">
+              <input id="nuevaArea" maxlength="120" placeholder="Nombre del área"
+                     class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2" />
+              <button class="rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Agregar</button>
+            </form>
+            <div id="catAreas" class="mt-4 divide-y divide-slate-100"></div>
+          </div>
+        </div>
+      </div><!-- /vistaCatalogos -->
     </main>
   </div>
 
@@ -235,12 +338,16 @@
       const role = getRole();
       document.getElementById("rolLabel").textContent =
         role === "revisor" ? "revisor · solo consulta" : role === "admin" ? "administrador" : "sesión";
+      document.getElementById("tabCatalogos").classList.toggle("hidden", role !== "admin");
       const hoy = hoyISO();
       document.getElementById("fDesde").value = hoy;
       document.getElementById("fHasta").value = hoy;
       initSstDates();
+      initIndDates();
       setTab("fatiga");
       cargar();
+      const tab = new URLSearchParams(location.search).get("tab");
+      if (["fatiga", "sst", "indicadores", "catalogos"].includes(tab)) setTab(tab);
     }
 
     document.getElementById("btnLogin").addEventListener("click", async () => {
@@ -425,6 +532,7 @@
     // Seguridad REG-SST-25
     // ======================================================================
     const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    const plural = (n, singular, plural) => `${n} ${n === 1 ? singular : plural}`;
     const fmtFecha = (iso) => {
       if (!iso) return "—";
       const [y, m, d] = String(iso).slice(0, 10).split("-");
@@ -432,19 +540,24 @@
     };
 
     function setTab(t) {
-      const fatiga = t === "fatiga";
-      document.getElementById("vistaFatiga").classList.toggle("hidden", !fatiga);
-      document.getElementById("vistaSst").classList.toggle("hidden", fatiga);
-      const active = ["bg-slate-800", "text-white"];
-      const idle = ["text-slate-500"];
-      const ft = document.getElementById("tabFatiga");
-      const st = document.getElementById("tabSst");
-      active.forEach(c => { ft.classList.toggle(c, fatiga); st.classList.toggle(c, !fatiga); });
-      idle.forEach(c => { ft.classList.toggle(c, !fatiga); st.classList.toggle(c, fatiga); });
-      if (!fatiga) {
+      if (t === "catalogos" && getRole() !== "admin") return;
+      const vistas = { fatiga: "vistaFatiga", sst: "vistaSst", indicadores: "vistaIndicadores", catalogos: "vistaCatalogos" };
+      Object.entries(vistas).forEach(([k, id]) => {
+        document.getElementById(id).classList.toggle("hidden", k !== t);
+      });
+      const tabs = { fatiga: "tabFatiga", sst: "tabSst", indicadores: "tabIndicadores", catalogos: "tabCatalogos" };
+      Object.entries(tabs).forEach(([k, id]) => {
+        const el = document.getElementById(id);
+        el.classList.toggle("bg-slate-800", k === t);
+        el.classList.toggle("text-white", k === t);
+        el.classList.toggle("text-slate-500", k !== t);
+      });
+      if (t === "sst") {
         initSstDates();
         if (!SST_LOADED) cargarSst();
       }
+      if (t === "indicadores") cargarIndicadores();
+      if (t === "catalogos") cargarCatalogosAdmin();
     }
 
     function initSstDates() {
@@ -568,8 +681,227 @@
       } catch (e) { toast(e.message, "error"); }
     }
 
+    // ======================================================================
+    // Indicadores (Fatiga + Seguridad)
+    // ======================================================================
+    function initIndDates() {
+      const d = document.getElementById("indDesde");
+      const h = document.getElementById("indHasta");
+      if (!h.value) h.value = hoyISO();
+      if (!d.value) {
+        const desde = new Date(hoyISO() + "T12:00:00");
+        desde.setDate(desde.getDate() - 29);
+        d.value = desde.toISOString().slice(0, 10);
+      }
+    }
+
+    function indRango() {
+      let desde = document.getElementById("indDesde").value;
+      let hasta = document.getElementById("indHasta").value;
+      if (!desde && !hasta) { initIndDates(); desde = document.getElementById("indDesde").value; hasta = document.getElementById("indHasta").value; }
+      if (!desde) desde = hasta;
+      if (!hasta) hasta = desde;
+      if (desde > hasta) { const t = desde; desde = hasta; hasta = t; }
+      return { desde, hasta };
+    }
+
+    function kpiCard(label, value, sub, tone = "slate") {
+      const tones = {
+        slate: "border-slate-200 bg-white text-slate-800",
+        indigo: "border-indigo-200 bg-indigo-50 text-indigo-800",
+        emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
+        amber: "border-amber-200 bg-amber-50 text-amber-800",
+        red: "border-red-200 bg-red-50 text-red-800",
+      };
+      return `<div class="rounded-2xl border ${tones[tone] || tones.slate} p-4">
+        <div class="text-[11px] font-semibold uppercase tracking-wide opacity-70">${esc(label)}</div>
+        <div class="mt-1 text-3xl font-black">${esc(value)}</div>
+        <div class="mt-0.5 text-xs opacity-70">${esc(sub)}</div>
+      </div>`;
+    }
+
+    function barList(rows, opts) {
+      if (!rows || !rows.length) {
+        return `<p class="py-6 text-center text-sm text-slate-400">${esc(opts.empty || "Sin datos en el periodo.")}</p>`;
+      }
+      const max = Math.max(1, ...rows.map((r) => Number(opts.value(r)) || 0));
+      return rows.map((r) => {
+        const v = Number(opts.value(r)) || 0;
+        const pct = Math.round((v / max) * 100);
+        return `<div class="mb-3.5">
+          <div class="flex items-baseline justify-between gap-3 text-sm">
+            <span class="min-w-0 line-clamp-2 font-medium leading-snug text-slate-700">${opts.label(r)}</span>
+            <span class="shrink-0 font-bold text-slate-800">${esc(opts.display ? opts.display(r, v) : v)}</span>
+          </div>
+          <div class="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div class="h-full rounded-full ${opts.color || "bg-indigo-500"}" style="width:${v ? Math.max(pct, 4) : 0}%"></div>
+          </div>
+          ${opts.sub ? `<div class="mt-0.5 truncate text-xs text-slate-400">${opts.sub(r)}</div>` : ""}
+        </div>`;
+      }).join("");
+    }
+
+    function renderIndFatiga(f) {
+      const riesgo = (f.amarillo || 0) + (f.rojo || 0);
+      document.getElementById("indFatigaCards").innerHTML = [
+        kpiCard("Tests aplicados", f.total, `${fmtFecha(f.desde)} – ${fmtFecha(f.hasta)}`, "slate"),
+        kpiCard("En riesgo", `${f.riesgo_pct}%`, `${riesgo} en amarillo/rojo`, "amber"),
+        kpiCard("Críticas con 2 pts", f.criticas, "Atención prioritaria", "red"),
+        kpiCard("Verde", f.verde, `${f.total ? Math.round((f.verde / f.total) * 100) : 0}% del periodo`, "emerald"),
+      ].join("");
+
+      let deptos = (f.por_departamento || []).filter((d) => d.riesgo > 0);
+      if (!deptos.length) deptos = (f.por_departamento || []).slice(0, 6);
+      document.getElementById("indFatigaDeptos").innerHTML = barList(deptos.slice(0, 6), {
+        value: (d) => d.riesgo,
+        label: (d) => esc(d.nombre),
+        sub: (d) => `${plural(d.total, "test", "tests")} · ${d.riesgo_pct}% en riesgo · ${plural(d.criticas, "crítica", "críticas")}`,
+        color: "bg-amber-500",
+      });
+
+      const preguntas = (f.por_pregunta || []).filter((p) => p.promedio > 0).slice(0, 6);
+      document.getElementById("indFatigaPreguntas").innerHTML = barList(preguntas, {
+        value: (p) => p.promedio,
+        display: (_p, v) => v.toFixed(2),
+        label: (p) => `<span class="text-slate-400">#${p.id_pregunta}</span> ${p.critica ? '<span class="text-red-500">⚠</span> ' : ""}${esc(p.texto)}`,
+        sub: (p) => `${p.respuestas} respuestas · ${p.dos_puntos} con 2 pts`,
+        color: "bg-indigo-500",
+      });
+    }
+
+    function renderIndSst(s) {
+      const areasHallazgos = (s.por_area || []).filter((a) => a.inseguras > 0).length;
+      document.getElementById("indSstCards").innerHTML = [
+        kpiCard("Auditorías", s.total, `${fmtFecha(s.desde)} – ${fmtFecha(s.hasta)}`, "slate"),
+        kpiCard("Conducta segura", `${s.porcentaje}%`, `${s.seguras} de ${s.total * 18}`, "emerald"),
+        kpiCard("Hallazgos", s.inseguras, `${plural(s.con_hallazgos, "auditoría", "auditorías")} con hallazgos`, "amber"),
+        kpiCard("Áreas con hallazgos", areasHallazgos, "Requieren seguimiento", "red"),
+      ].join("");
+
+      let areas = (s.por_area || []).filter((a) => a.inseguras > 0);
+      if (!areas.length) areas = (s.por_area || []).slice(0, 6);
+      document.getElementById("indSstAreas").innerHTML = barList(areas.slice(0, 6), {
+        value: (a) => a.inseguras,
+        label: (a) => esc(a.nombre),
+        sub: (a) => `${plural(a.total, "auditoría", "auditorías")} · ${a.pct}% seguro`,
+        color: "bg-red-500",
+      });
+
+      const conductas = (s.por_conducta || []).slice(0, 6);
+      document.getElementById("indSstConductas").innerHTML = barList(conductas, {
+        value: (c) => c.inseguras,
+        label: (c) => `<span class="text-slate-400">#${c.n}</span> ${esc(c.texto)}`,
+        sub: () => "Registros inseguros en el periodo",
+        color: "bg-amber-500",
+      });
+
+      const auditores = (s.por_auditor || []).slice(0, 8);
+      document.getElementById("indSstAuditores").innerHTML = barList(auditores, {
+        value: (a) => a.total,
+        label: (a) => esc(a.nombre),
+        sub: (a) => `${plural(a.inseguras, "hallazgo", "hallazgos")} · ${a.pct}% seguro`,
+        color: "bg-indigo-500",
+      });
+    }
+
+    async function cargarIndicadores() {
+      const { desde, hasta } = indRango();
+      try {
+        const [f, s] = await Promise.all([
+          api(`/indicadores/fatiga?desde=${desde}&hasta=${hasta}`, { token: getToken() }),
+          api(`/indicadores/sst?desde=${desde}&hasta=${hasta}`, { token: getToken() }),
+        ]);
+        renderIndFatiga(f);
+        renderIndSst(s);
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
+        else toast(e.message, "error");
+      }
+    }
+
+    document.getElementById("indAplicar").addEventListener("click", cargarIndicadores);
+
+    // ======================================================================
+    // Catalogos administrables
+    // ======================================================================
+    async function cargarCatalogosAdmin() {
+      if (getRole() !== "admin") return;
+      try {
+        const c = await api("/sst/catalogos", { token: getToken() });
+        renderCatalogo("catAuditores", c.auditores || [], "auditor");
+        renderCatalogo("catAreas", c.areas || [], "area");
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
+        else toast(e.message, "error");
+      }
+    }
+
+    function renderCatalogo(id, items, tipo) {
+      const el = document.getElementById(id);
+      if (!items.length) {
+        el.innerHTML = '<p class="py-4 text-sm text-slate-400">Aún no hay registros. Agrega el primero arriba.</p>';
+        return;
+      }
+      el.innerHTML = items.map((i) => `
+        <div class="flex items-center justify-between gap-3 py-2.5">
+          <span class="min-w-0 truncate text-sm font-medium text-slate-700">${esc(i.nombre)}</span>
+          <button type="button" data-del-${tipo}="${i.id}"
+                  class="shrink-0 rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700">Quitar</button>
+        </div>`).join("");
+    }
+
+    async function agregarCatalogo(tipo, inputId) {
+      const input = document.getElementById(inputId);
+      const nombre = input.value.trim();
+      if (nombre.length < 2) {
+        toast("Escribe un nombre de al menos 2 caracteres.", "error");
+        input.focus();
+        return;
+      }
+      try {
+        await api(`/sst/${tipo}`, { method: "POST", body: { nombre }, token: getToken() });
+        input.value = "";
+        toast("Agregado al catálogo", "ok");
+        cargarCatalogosAdmin();
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
+        else toast(e.message, "error");
+      }
+    }
+
+    document.getElementById("formAuditor").addEventListener("submit", (e) => {
+      e.preventDefault();
+      agregarCatalogo("auditores", "nuevoAuditor");
+    });
+    document.getElementById("formArea").addEventListener("submit", (e) => {
+      e.preventDefault();
+      agregarCatalogo("areas", "nuevaArea");
+    });
+    document.getElementById("catAuditores").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-del-auditor]");
+      if (!btn) return;
+      if (!confirm("¿Quitar este auditor del catálogo? Las auditorías ya guardadas no cambian.")) return;
+      try {
+        await api(`/sst/auditores/${btn.dataset.delAuditor}`, { method: "DELETE", token: getToken() });
+        toast("Auditor quitado", "ok");
+        cargarCatalogosAdmin();
+      } catch (err) { toast(err.message, "error"); }
+    });
+    document.getElementById("catAreas").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-del-area]");
+      if (!btn) return;
+      if (!confirm("¿Quitar esta área del catálogo? Las auditorías ya guardadas no cambian.")) return;
+      try {
+        await api(`/sst/areas/${btn.dataset.delArea}`, { method: "DELETE", token: getToken() });
+        toast("Área quitada", "ok");
+        cargarCatalogosAdmin();
+      } catch (err) { toast(err.message, "error"); }
+    });
+
     document.getElementById("tabFatiga").addEventListener("click", () => setTab("fatiga"));
     document.getElementById("tabSst").addEventListener("click", () => setTab("sst"));
+    document.getElementById("tabIndicadores").addEventListener("click", () => setTab("indicadores"));
+    document.getElementById("tabCatalogos").addEventListener("click", () => setTab("catalogos"));
     document.getElementById("fSstAplicar").addEventListener("click", cargarSst);
     document.getElementById("fSstQ").addEventListener("keydown", e => { if (e.key === "Enter") cargarSst(); });
     document.getElementById("fSstHoy").addEventListener("click", () => {

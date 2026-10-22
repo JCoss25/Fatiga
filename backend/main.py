@@ -14,6 +14,7 @@ from . import scoring
 from .auth import require_reports, role_for
 from .db import get_db
 from .models import FatigaFirma, FatigaPregunta, FatigaRespuesta, FatigaTest, Usuario
+from .indicadores import router as indicadores_router
 from .schemas import PreguntaOut, TestIn, TestOut
 from .sst import router as sst_router
 
@@ -23,6 +24,7 @@ CLOUDFRONT_BASE = "https://dvctlemkfvc4i.cloudfront.net/"
 
 app = FastAPI(title="Kogn1v1s · Fatiga y Seguridad")
 app.include_router(sst_router)
+app.include_router(indicadores_router)
 
 
 @app.middleware("http")

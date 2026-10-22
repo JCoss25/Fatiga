@@ -87,11 +87,17 @@
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500" for="area">Área</label>
-            <input id="area" type="text" placeholder="Ensamble final" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required />
+            <select id="area" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
+              <option value="">Cargando áreas…</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-400">Lista administrada desde el Panel → Catálogos.</p>
           </div>
           <div class="sm:col-span-2">
             <label class="mb-1 block text-xs font-medium text-slate-500" for="auditor">Auditor</label>
-            <input id="auditor" type="text" placeholder="Quién observa" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required />
+            <select id="auditor" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
+              <option value="">Cargando auditores…</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-400">Lista administrada desde el Panel → Catálogos.</p>
           </div>
         </div>
       </section>
@@ -390,9 +396,32 @@
       $("nombreTrabajador").textContent = e.nombre_completo;
     }
 
-    $("auditor").addEventListener("input", () => {
+    $("auditor").addEventListener("change", () => {
       $("nombreAuditor").textContent = $("auditor").value || "\u00a0";
     });
+
+    // ---------- Catalogos administrables (Panel > Catalogos) ----------
+    function llenarSelect(id, items, placeholder, vacio) {
+      const sel = $(id);
+      if (!items || !items.length) {
+        sel.innerHTML = `<option value="">${esc(vacio)}</option>`;
+        return;
+      }
+      sel.innerHTML = `<option value="">${esc(placeholder)}</option>` +
+        items.map((i) => `<option value="${esc(i.nombre)}">${esc(i.nombre)}</option>`).join("");
+    }
+
+    async function cargarCatalogos() {
+      try {
+        const c = await api("/sst/catalogos");
+        llenarSelect("area", c.areas, "Selecciona el área", "Sin áreas registradas");
+        llenarSelect("auditor", c.auditores, "Selecciona al auditor", "Sin auditores registrados");
+      } catch (e) {
+        llenarSelect("area", [], "", "No se pudieron cargar las áreas");
+        llenarSelect("auditor", [], "", "No se pudieron cargar los auditores");
+        toast("Catálogos: " + e.message, "error");
+      }
+    }
 
     // ---------- Enviar ----------
     $("form").addEventListener("submit", async (ev) => {
@@ -420,6 +449,11 @@
       if (!FIRMA_TRABAJADOR || !FIRMA_AUDITOR) {
         toast("Faltan las dos firmas.", "error");
         (!FIRMA_TRABAJADOR ? $("firmaTrabajador") : $("firmaAuditor")).scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      if (!$("area").value || !$("auditor").value) {
+        toast("Selecciona el área y el auditor de las listas.", "error");
+        (!$("area").value ? $("area") : $("auditor")).scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
 
@@ -456,6 +490,7 @@
     });
 
     cargarCatalogo();
+    cargarCatalogos();
   </script>
 </body>
 </html>

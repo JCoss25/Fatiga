@@ -7,13 +7,16 @@ from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from .auth import require_reports
+from .auth import require_admin, require_reports
 from .db import get_db
-from .models import SstAuditoria, SstPregunta, SstRespuesta, Usuario
+from .models import SstArea, SstAuditor, SstAuditoria, SstPregunta, SstRespuesta, Usuario
 from .schemas import (
+    CatalogoIn,
+    CatalogoItemOut,
+    CatalogosOut,
     SstAuditoriaDetalleOut,
     SstAuditoriaIn,
     SstAuditoriaOut,
@@ -80,6 +83,84 @@ def preguntas(db: Session = Depends(get_db)):
     return [SstPreguntaOut(id_pregunta=p.id_pregunta, orden=p.orden, texto=p.texto) for p in rows]
 
 
+# --------------------------------------------------------------------------
+# Catalogos administrables: auditores y areas
+# --------------------------------------------------------------------------
+@router.get("/catalogos", response_model=CatalogosOut)
+def catalogos(db: Session = Depends(get_db)):
+    """Listas activas para los desplegables del formulario. Publico."""
+    auditores = db.scalars(
+        select(SstAuditor).where(SstAuditor.activo == 1).order_by(SstAuditor.nombre)
+    ).all()
+    areas = db.scalars(
+        select(SstArea).where(SstArea.activo == 1).order_by(SstArea.nombre)
+    ).all()
+    return CatalogosOut(
+        auditores=[CatalogoItemOut(id=a.id_auditor, nombre=a.nombre) for a in auditores],
+        areas=[CatalogoItemOut(id=a.id_area, nombre=a.nombre) for a in areas],
+    )
+
+
+@router.post("/auditores", response_model=CatalogoItemOut, dependencies=[Depends(require_admin)])
+def agregar_auditor(payload: CatalogoIn, db: Session = Depends(get_db)):
+    nombre = payload.nombre.strip()
+    if len(nombre) < 2:
+        raise HTTPException(status_code=422, detail="Escribe un nombre de auditor válido.")
+    existing = db.scalar(
+        select(SstAuditor).where(func.lower(SstAuditor.nombre) == func.lower(nombre))
+    )
+    if existing:
+        existing.nombre = nombre
+        existing.activo = 1
+        db.commit()
+        db.refresh(existing)
+        return CatalogoItemOut(id=existing.id_auditor, nombre=existing.nombre)
+    item = SstAuditor(nombre=nombre, activo=1)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return CatalogoItemOut(id=item.id_auditor, nombre=item.nombre)
+
+
+@router.delete("/auditores/{id_auditor}", dependencies=[Depends(require_admin)])
+def borrar_auditor(id_auditor: int, db: Session = Depends(get_db)):
+    item = db.get(SstAuditor, id_auditor)
+    if not item:
+        raise HTTPException(status_code=404, detail="Auditor no encontrado")
+    item.activo = 0
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/areas", response_model=CatalogoItemOut, dependencies=[Depends(require_admin)])
+def agregar_area(payload: CatalogoIn, db: Session = Depends(get_db)):
+    nombre = payload.nombre.strip()
+    if len(nombre) < 2:
+        raise HTTPException(status_code=422, detail="Escribe un área válida.")
+    existing = db.scalar(select(SstArea).where(func.lower(SstArea.nombre) == func.lower(nombre)))
+    if existing:
+        existing.nombre = nombre
+        existing.activo = 1
+        db.commit()
+        db.refresh(existing)
+        return CatalogoItemOut(id=existing.id_area, nombre=existing.nombre)
+    item = SstArea(nombre=nombre, activo=1)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return CatalogoItemOut(id=item.id_area, nombre=item.nombre)
+
+
+@router.delete("/areas/{id_area}", dependencies=[Depends(require_admin)])
+def borrar_area(id_area: int, db: Session = Depends(get_db)):
+    item = db.get(SstArea, id_area)
+    if not item:
+        raise HTTPException(status_code=404, detail="Área no encontrada")
+    item.activo = 0
+    db.commit()
+    return {"ok": True}
+
+
 @router.post("", response_model=dict)
 def crear_auditoria(payload: SstAuditoriaIn, request: Request, db: Session = Depends(get_db)):
     """Alta publica de una auditoria. No requiere contrasena."""
@@ -108,16 +189,30 @@ def crear_auditoria(payload: SstAuditoriaIn, request: Request, db: Session = Dep
     if not usuario or usuario.estatus != 1:
         raise HTTPException(status_code=422, detail="Trabajador no válido o inactivo.")
 
+    # Area y auditor deben existir en los catalogos administrables.
+    area = payload.area.strip()
+    auditor = payload.auditor.strip()
+    area_ok = db.scalar(
+        select(SstArea).where(SstArea.nombre == area, SstArea.activo == 1)
+    )
+    if not area_ok:
+        raise HTTPException(status_code=422, detail="Selecciona un área registrada en el catálogo.")
+    auditor_ok = db.scalar(
+        select(SstAuditor).where(SstAuditor.nombre == auditor, SstAuditor.activo == 1)
+    )
+    if not auditor_ok:
+        raise HTTPException(status_code=422, detail="Selecciona un auditor registrado en el catálogo.")
+
     seguras = sum(1 for r in payload.respuestas if r.estado == "SEGURO")
     inseguras = 18 - seguras
     porcentaje = round((seguras / 18) * 100)
 
     auditoria = SstAuditoria(
         fecha=payload.fecha,
-        area=payload.area.strip(),
+        area=area,
         departamento=(usuario.departamento or "").strip() or "Sin departamento",
         auditado=usuario.nombre_completo,
-        auditor=payload.auditor.strip(),
+        auditor=auditor,
         comentarios=(payload.comentarios or "").strip() or None,
         seguras=seguras,
         inseguras=inseguras,

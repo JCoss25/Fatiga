@@ -153,6 +153,26 @@ CREATE TABLE IF NOT EXISTS sst_respuestas (
   KEY idx_sst_resp_aud (id_auditoria)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Catalogos administrables (se agregan desde el Panel > Catalogos).
+-- No modifican sst_auditorias: area y auditor siguen guardandose como texto.
+CREATE TABLE IF NOT EXISTS sst_auditores (
+  id_auditor  SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre      VARCHAR(120) NOT NULL,
+  activo      TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_auditor),
+  UNIQUE KEY uq_sst_auditor_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sst_areas (
+  id_area    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre     VARCHAR(120) NOT NULL,
+  activo     TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_area),
+  UNIQUE KEY uq_sst_area_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO sst_preguntas (id_pregunta, orden, texto) VALUES
   (1,1,'Porta su EPP completo, de forma correcta y de acuerdo al riesgo de su tarea.'),
   (2,2,'Hace uso del uniforme otorgado por la empresa de forma adecuada.'),

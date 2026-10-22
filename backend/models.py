@@ -139,3 +139,25 @@ class SstRespuesta(Base):
 
     auditoria: Mapped["SstAuditoria"] = relationship(back_populates="respuestas")
 
+
+class SstAuditor(Base):
+    """Catalogo de auditores que el administrador agrega desde el panel."""
+
+    __tablename__ = "sst_auditores"
+
+    id_auditor: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(120), unique=True)
+    activo: Mapped[int] = mapped_column(SmallInteger, default=1)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
+
+class SstArea(Base):
+    """Catalogo de areas que el administrador agrega desde el panel."""
+
+    __tablename__ = "sst_areas"
+
+    id_area: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(120), unique=True)
+    activo: Mapped[int] = mapped_column(SmallInteger, default=1)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
