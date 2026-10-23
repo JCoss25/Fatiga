@@ -20,13 +20,24 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "cambia_esta_clave")
 REVIEWER_PASSWORD = os.getenv("REVIEWER_PASSWORD", "")
 
 
+def _keys(valor: str):
+    """Permite varias claves separadas por coma en la misma variable."""
+    return [k.strip() for k in (valor or "").split(",") if k.strip()]
+
+
+ADMIN_KEYS = _keys(ADMIN_PASSWORD)
+REVIEWER_KEYS = _keys(REVIEWER_PASSWORD)
+
+
 def role_for(token: Optional[str]) -> Optional[str]:
     if not token:
         return None
-    if ADMIN_PASSWORD and hmac.compare_digest(token, ADMIN_PASSWORD):
-        return "admin"
-    if REVIEWER_PASSWORD and hmac.compare_digest(token, REVIEWER_PASSWORD):
-        return "revisor"
+    for clave in ADMIN_KEYS:
+        if hmac.compare_digest(token, clave):
+            return "admin"
+    for clave in REVIEWER_KEYS:
+        if hmac.compare_digest(token, clave):
+            return "revisor"
     return None
 
 
