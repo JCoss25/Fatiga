@@ -111,15 +111,29 @@ def main():
                 print(f"  [!] Omitida (codigo {e.args[0]}): {first}...")
         # Actualiza instalaciones que ya tenian las tablas antes de los
         # estados COMPRADO/CERRADO y de las fechas de seguimiento.
-        ensure_column(cur, name, "cot_solicitudes", "aprobacion_notificada_en", "DATETIME NULL")
-        ensure_column(cur, name, "cot_solicitudes", "comprado_en", "DATETIME NULL")
-        ensure_column(cur, name, "cot_solicitudes", "cerrado_en", "DATETIME NULL")
-        cur.execute(
-            "ALTER TABLE cot_solicitudes MODIFY estatus "
-            "ENUM('BORRADOR','PENDIENTE','APROBADA','COMPRADO','CERRADO','RECHAZADA','CANCELADA') "
-            "NOT NULL DEFAULT 'BORRADOR'"
-        )
-        print("  [ok] estatus con COMPRADO/CERRADO")
+        # Si el usuario no tiene ALTER, se avisa y se continua: en una tabla
+        # recien creada las columnas y el enum ya vienen correctos.
+        for column, ddl in (
+            ("aprobacion_notificada_en", "DATETIME NULL"),
+            ("comprado_en", "DATETIME NULL"),
+            ("cerrado_en", "DATETIME NULL"),
+        ):
+            try:
+                ensure_column(cur, name, "cot_solicitudes", column, ddl)
+            except pymysql.MySQLError as e:
+                print(f"  [!] No se pudo asegurar {column} (codigo {e.args[0]}); se requiere admin")
+        try:
+            cur.execute(
+                "ALTER TABLE cot_solicitudes MODIFY estatus "
+                "ENUM('BORRADOR','PENDIENTE','APROBADA','COMPRADO','CERRADO','RECHAZADA','CANCELADA') "
+                "NOT NULL DEFAULT 'BORRADOR'"
+            )
+            print("  [ok] estatus con COMPRADO/CERRADO")
+        except pymysql.MySQLError as e:
+            print(
+                f"  [!] No se pudo actualizar el enum de estatus (codigo {e.args[0]}); "
+                "si la tabla ya existia, ejecutalo con un usuario admin"
+            )
 
         cur.execute("SHOW TABLES LIKE 'cot_%'")
         print("\nTablas cot_:", [r[0] for r in cur.fetchall()])

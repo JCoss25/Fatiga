@@ -63,9 +63,7 @@ CREATE TABLE IF NOT EXISTS cot_comentarios (
   texto         TEXT NOT NULL,
   creado_en     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_comentario),
-  KEY idx_cot_com_sol (id_solicitud),
-  CONSTRAINT fk_cot_com_sol FOREIGN KEY (id_solicitud)
-    REFERENCES cot_solicitudes (id_solicitud) ON DELETE CASCADE
+  KEY idx_cot_com_sol (id_solicitud)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS cot_adjuntos (
@@ -77,9 +75,7 @@ CREATE TABLE IF NOT EXISTS cot_adjuntos (
   contenido    MEDIUMBLOB NOT NULL,
   creado_en    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_adjunto),
-  KEY idx_cot_adj_sol (id_solicitud),
-  CONSTRAINT fk_cot_adj_sol FOREIGN KEY (id_solicitud)
-    REFERENCES cot_solicitudes (id_solicitud) ON DELETE CASCADE
+  KEY idx_cot_adj_sol (id_solicitud)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS cot_correos (
@@ -95,9 +91,7 @@ CREATE TABLE IF NOT EXISTS cot_correos (
   creado_en    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_correo),
   KEY idx_cot_correo_sol (id_solicitud),
-  KEY idx_cot_correo_fecha (creado_en),
-  CONSTRAINT fk_cot_correo_sol FOREIGN KEY (id_solicitud)
-    REFERENCES cot_solicitudes (id_solicitud) ON DELETE SET NULL
+  KEY idx_cot_correo_fecha (creado_en)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS cot_catalogos (
