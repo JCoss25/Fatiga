@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aprobador · Cotización de daños</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .inp { width:100%; border:1px solid #cbd5e1; border-radius:.75rem; padding:.6rem .8rem; font-size:.875rem; outline:none; background:#fff; }
+    .inp:focus { border-color:#059669; box-shadow:0 0 0 3px #d1fae5; }
+    .tab { border-radius:.6rem; padding:.5rem .9rem; font-size:.8rem; font-weight:600; color:#64748b; }
+    .tab:hover { color:#0f172a; }
+    .tab.activo { background:#0f172a; color:#fff; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+  <!-- LOGIN -->
+  <div id="login" class="flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-xl text-white">✅</div>
+      <h1 class="text-center text-lg font-bold">Aprobador</h1>
+      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Cotización de daños · Orden de Reparación TOT</p>
+      <input id="pwd" type="password" placeholder="Clave de aprobador" autofocus
+             class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+      <div id="loginErr" class="mt-2 hidden text-sm text-red-600"></div>
+      <button id="btnLogin" class="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700">Entrar</button>
+      <a href="index.html" class="mt-4 block text-center text-sm text-slate-400 hover:underline">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hidden">
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-lg text-white">🧾</a>
+          <div>
+            <h1 class="font-bold leading-tight">Cotizaciones · Aprobador</h1>
+            <p class="text-xs text-slate-500"><span id="quien">—</span> · Órdenes de Reparación TOT</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnRecordatorios" class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-800 hover:bg-amber-100">Procesar recordatorios</button>
+          <button id="btnSalir" class="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Pendientes</p>
+          <p id="cPendientes" class="mt-1 text-2xl font-bold text-amber-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Vencidas (+2 días)</p>
+          <p id="cVencidas" class="mt-1 text-2xl font-bold text-red-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Aprobadas</p>
+          <p id="cAprobadas" class="mt-1 text-2xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Rechazadas</p>
+          <p id="cRechazadas" class="mt-1 text-2xl font-bold text-red-600">0</p>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Tiempo promedio de aprobación</p>
+          <p id="cTiempo" class="mt-1 text-xl font-bold">—</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Efectividad (aprobadas / decididas)</p>
+          <p id="cEfectividad" class="mt-1 text-xl font-bold">—</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Recordatorios enviados</p>
+          <p id="cRecordatorios" class="mt-1 text-xl font-bold">—</p>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-wrap items-center gap-1 rounded-2xl border border-slate-200 bg-white p-2">
+        <button class="tab activo" data-tab="PENDIENTE">Pendientes</button>
+        <button class="tab" data-tab="TODAS">Todas</button>
+        <button class="tab" data-tab="APROBADA">Aprobadas</button>
+        <button class="tab" data-tab="RECHAZADA">Rechazadas</button>
+        <button class="tab" data-tab="CORREOS">Correos</button>
+      </div>
+
+      <div id="vistaSolicitudes">
+        <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input id="q" placeholder="Buscar folio, VIN, descripción, proveedor…"
+                   class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
+            <select id="fEstatus" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-500">
+              <option value="">Todos los estatus</option>
+              <option value="PENDIENTE" selected>Pendiente</option>
+              <option value="APROBADA">Aprobada</option>
+              <option value="RECHAZADA">Rechazada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Folio</th>
+                  <th class="px-4 py-3">Solicitante / Cliente</th>
+                  <th class="px-4 py-3">Fecha</th>
+                  <th class="px-4 py-3">VIN / No. parte</th>
+                  <th class="px-4 py-3">Descripción</th>
+                  <th class="px-4 py-3 text-right">Total</th>
+                  <th class="px-4 py-3">Estatus</th>
+                  <th class="px-4 py-3">Días</th>
+                  <th class="px-4 py-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+          <div id="vacio" class="hidden p-10 text-center text-sm text-slate-400">No hay solicitudes en esta vista.</div>
+        </div>
+      </div>
+
+      <div id="vistaCorreos" class="mt-4 hidden">
+        <div class="rounded-2xl border border-slate-200 bg-white">
+          <div class="flex items-center justify-between border-b border-slate-200 p-4">
+            <div>
+              <h2 class="font-bold">Bandeja de correos</h2>
+              <p class="text-xs text-slate-500">Correos enviados por el módulo. En modo simulado no salen al exterior.</p>
+            </div>
+            <button id="btnRefrescarCorreos" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50">Refrescar</button>
+          </div>
+          <div id="listaCorreos" class="divide-y divide-slate-100"></div>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold">Indicadores por mes</h2>
+          <span class="text-xs text-slate-400">Últimos 6 meses</span>
+        </div>
+        <div id="porMes" class="mt-3 space-y-2"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL DETALLE -->
+  <div id="modalDetalle" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 p-4">
+    <div class="mx-auto my-6 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+      <div class="flex items-start justify-between border-b border-slate-200 p-5">
+        <div>
+          <h2 id="detFolio" class="text-lg font-bold">—</h2>
+          <p id="detSub" class="text-xs text-slate-500">—</p>
+        </div>
+        <button type="button" id="btnCerrarDetalle" class="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100">✕</button>
+      </div>
+      <div id="detalleContenido" class="p-5"></div>
+      <div id="panelDecision" class="border-t border-slate-200 p-5"></div>
+      <div id="detalleAcciones" class="flex flex-wrap justify-end gap-2 border-t border-slate-200 p-4"></div>
+    </div>
+  </div>
+
+  <script>
+    let SOLICITUDES = [];
+    let DETALLE = null;
+    let TAB = "PENDIENTE";
+    let INDICADORES = null;
+
+    const $ = id => document.getElementById(id);
+    const token = () => SES.token();
+
+    /* ---------------- Sesión ---------------- */
+    async function mostrarPanel(r) {
+      $("login").classList.add("hidden");
+      $("panel").classList.remove("hidden");
+      $("quien").textContent = r.nombre || "Aprobador";
+      await cargar();
+      const id = new URLSearchParams(location.search).get("id");
+      if (id) abrirDetalle(Number(id));
+    }
+
+    async function iniciar() {
+      const r = await validarSesion("aprobador");
+      if (r) mostrarPanel(r);
+    }
+
+    $("btnLogin").addEventListener("click", async () => {
+      const err = $("loginErr");
+      err.classList.add("hidden");
+      try {
+        const r = await entrar($("pwd").value, "aprobador");
+        mostrarPanel(r);
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove("hidden");
+      }
+    });
+    $("pwd").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin").click(); });
+    $("btnSalir").addEventListener("click", () => { SES.clear(); location.reload(); });
+
+    /* ---------------- Tabs ---------------- */
+    document.querySelectorAll("[data-tab]").forEach(b => {
+      b.addEventListener("click", () => {
+        TAB = b.dataset.tab;
+        document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("activo", x === b));
+        const esCorreos = TAB === "CORREOS";
+        $("vistaSolicitudes").classList.toggle("hidden", esCorreos);
+        $("vistaCorreos").classList.toggle("hidden", !esCorreos);
+        if (esCorreos) cargarCorreos();
+        else {
+          $("fEstatus").value = TAB === "TODAS" ? "" : TAB;
+          cargar();
+        }
+      });
+    });
+
+    /* ---------------- Carga ---------------- */
+    async function cargar() {
+      const params = new URLSearchParams();
+      const q = $("q").value.trim();
+      const est = $("fEstatus").value;
+      if (q) params.set("q", q);
+      if (est) params.set("estatus", est);
+      const [lista, ind] = await Promise.all([
+        api("/solicitudes?" + params.toString(), { token: token() }),
+        api("/indicadores", { token: token() }),
+      ]);
+      SOLICITUDES = lista;
+      INDICADORES = ind;
+      pintarIndicadores(ind);
+      renderTabla();
+    }
+
+    function pintarIndicadores(ind) {
+      $("cPendientes").textContent = ind.pendientes;
+      $("cVencidas").textContent = ind.vencidas;
+      $("cAprobadas").textContent = ind.aprobadas;
+      $("cRechazadas").textContent = ind.rechazadas;
+      $("cTiempo").textContent = ind.tiempo_promedio_horas ? `${ind.tiempo_promedio_horas} h` : "—";
+      $("cEfectividad").textContent = `${ind.efectividad}%`;
+      $("cRecordatorios").textContent = ind.recordatorios;
+      const max = Math.max(1, ...(ind.por_mes || []).map(m => m.total));
+      $("porMes").innerHTML = (ind.por_mes || []).length
+        ? ind.por_mes.map(m => `
+          <div class="flex items-center gap-3 text-xs">
+            <span class="w-16 shrink-0 text-slate-500">${escapeHtml(m.mes)}</span>
+            <div class="h-4 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div class="h-full rounded-full bg-indigo-500" style="width:${Math.round((m.total / max) * 100)}%"></div>
+            </div>
+            <span class="w-24 shrink-0 text-right text-slate-500">${m.total} total · ${m.aprobadas} OK</span>
+          </div>`).join("")
+        : `<p class="text-xs text-slate-400">Sin datos todavía.</p>`;
+    }
+
+    function renderTabla() {
+      const tbody = $("tbody");
+      const vacio = $("vacio");
+      if (!SOLICITUDES.length) {
+        tbody.innerHTML = "";
+        vacio.classList.remove("hidden");
+        return;
+      }
+      vacio.classList.add("hidden");
+      tbody.innerHTML = SOLICITUDES.map(s => `
+        <tr class="hover:bg-slate-50">
+          <td class="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-slate-700">${escapeHtml(s.folio)}</td>
+          <td class="px-4 py-3 text-xs">${escapeHtml(s.solicitante_cliente || "—")}<br><span class="text-[11px] text-slate-400">${escapeHtml(s.creado_por_nombre || "")}</span></td>
+          <td class="whitespace-nowrap px-4 py-3 text-xs text-slate-500">${fecha(s.fecha_solicitud)}</td>
+          <td class="px-4 py-3 text-xs text-slate-500">${escapeHtml(s.vin || "—")}<br><span class="text-slate-400">${escapeHtml(s.no_parte || "—")}</span></td>
+          <td class="max-w-[230px] px-4 py-3 text-xs text-slate-600"><div class="truncate" title="${escapeHtml(s.descripcion)}">${escapeHtml(s.descripcion || "—")}</div></td>
+          <td class="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold">${money(s.total, s.moneda)}</td>
+          <td class="whitespace-nowrap px-4 py-3">${badgeEstatus(s.estatus)}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-xs ${s.vencida ? "font-bold text-red-600" : "text-slate-500"}">${s.estatus === "PENDIENTE" ? diasTexto(s.dias) : "—"}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-right">
+            <div class="flex justify-end gap-1.5">
+              <button data-ver="${s.id_solicitud}" class="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-800">Revisar</button>
+              <button data-pdf="${s.id_solicitud}" class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50">PDF</button>
+            </div>
+          </td>
+        </tr>`).join("");
+    }
+
+    $("tbody").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.ver) abrirDetalle(Number(b.dataset.ver));
+      if (b.dataset.pdf) abrirDocumento(Number(b.dataset.pdf));
+    });
+
+    let tmr;
+    $("q").addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(cargar, 300); });
+    $("fEstatus").addEventListener("change", cargar);
+
+    /* ---------------- Correos ---------------- */
+    async function cargarCorreos() {
+      try {
+        const lista = await api("/correos?limit=200", { token: token() });
+        $("listaCorreos").innerHTML = lista.length ? lista.map(c => {
+          const color = c.estado === "ERROR" ? "bg-red-100 text-red-700" : c.estado === "SIMULADO" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-700";
+          return `<details class="group p-4">
+            <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-700">${escapeHtml(c.asunto)}</p>
+                <p class="text-[11px] text-slate-400">Para: ${escapeHtml(c.destinatario || "—")} · ${fechaHora(c.creado_en)}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="rounded-full px-2 py-0.5 text-[11px] font-semibold ${color}">${c.estado}</span>
+                <span class="text-xs text-slate-400">${c.tipo}</span>
+              </div>
+            </summary>
+            <pre class="mt-3 whitespace-pre-wrap rounded-xl bg-slate-50 p-3 text-xs text-slate-600">${escapeHtml(c.cuerpo)}</pre>
+            ${c.error ? `<p class="mt-2 text-xs text-red-600">${escapeHtml(c.error)}</p>` : ""}
+            ${c.id_solicitud ? `<button data-correo-sol="${c.id_solicitud}" class="mt-2 rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-white">Abrir solicitud</button>` : ""}
+          </details>`;
+        }).join("") : `<p class="p-8 text-center text-sm text-slate-400">No hay correos registrados.</p>`;
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    $("listaCorreos").addEventListener("click", e => {
+      const b = e.target.closest("[data-correo-sol]");
+      if (b) abrirDetalle(Number(b.dataset.correoSol));
+    });
+    $("btnRefrescarCorreos").addEventListener("click", cargarCorreos);
+
+    $("btnRecordatorios").addEventListener("click", async () => {
+      try {
+        const r = await api("/recordatorios/procesar", { method: "POST", token: token() });
+        toast(r.recordatorios_enviados ? `${r.recordatorios_enviados} recordatorio(s) enviado(s)` : "No hay recordatorios pendientes", "ok");
+        await cargar();
+      } catch (e) { toast(e.message, "error"); }
+    });
+
+    /* ---------------- Detalle ---------------- */
+    async function abrirDetalle(id) {
+      try {
+        const d = await api("/solicitudes/" + id, { token: token() });
+        DETALLE = d;
+        renderDetalle(d);
+        $("modalDetalle").classList.remove("hidden");
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    function campo(label, valor) {
+      return `<div><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">${label}</p>
+        <p class="mt-0.5 text-sm text-slate-700">${escapeHtml(valor || "—")}</p></div>`;
+    }
+
+    function renderDetalle(d) {
+      $("detFolio").textContent = d.folio;
+      $("detSub").innerHTML = `${badgeEstatus(d.estatus)} <span class="ml-2">${fecha(d.fecha_solicitud)} · ${escapeHtml(d.solicitante_cliente || "")}</span>`;
+
+      const adjuntos = (d.adjuntos_lista || []).length
+        ? d.adjuntos_lista.map(a => `<button data-descargar="${a.id_adjunto}" data-nombre="${escapeHtml(a.nombre)}"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs hover:bg-slate-50">
+              📎 ${escapeHtml(a.nombre)} <span class="text-slate-400">(${formatoBytes(a.tamano)})</span></button>`).join(" ")
+        : `<span class="text-xs text-slate-400">Sin adjuntos</span>`;
+
+      const comentarios = (d.comentarios_lista || []).length
+        ? d.comentarios_lista.map(c => {
+            const color = c.tipo === "RECHAZO" ? "border-red-200 bg-red-50"
+              : c.tipo === "APROBACION" ? "border-emerald-200 bg-emerald-50"
+              : c.tipo === "REVISION" ? "border-amber-200 bg-amber-50"
+              : c.tipo === "SISTEMA" ? "border-slate-200 bg-slate-50"
+              : "border-slate-200 bg-white";
+            const etiqueta = { COMENTARIO:"Comentario", REVISION:"Revisión", APROBACION:"Aprobación", RECHAZO:"Rechazo", SISTEMA:"Sistema" }[c.tipo] || c.tipo;
+            return `<div class="rounded-xl border ${color} p-3">
+              <div class="flex flex-wrap items-center justify-between gap-1">
+                <p class="text-xs font-semibold text-slate-700">${escapeHtml(c.autor_nombre)} · ${etiqueta}</p>
+                <p class="text-[11px] text-slate-400">${fechaHora(c.creado_en)}</p>
+              </div>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-slate-600">${escapeHtml(c.texto)}</p>
+            </div>`;
+          }).join("")
+        : `<p class="text-xs text-slate-400">Sin comentarios todavía.</p>`;
+
+      $("detalleContenido").innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-3">
+          ${campo("Serie", d.serie)}
+          ${campo("Fecha requerida / ETA", d.fecha_requerida ? fecha(d.fecha_requerida) : "—")}
+          ${campo("VIN", d.vin)}
+          ${campo("Ubicación", d.ubicacion)}
+          ${campo("Tipo de servicio", d.tipo_servicio)}
+          ${campo("No. de parte", d.no_parte)}
+          ${campo("Cantidad", d.cantidad)}
+          ${campo("Precio unitario", money(d.precio, d.moneda))}
+          ${campo("Total", money(d.total, d.moneda))}
+          ${campo("Proveedor sugerido", d.proveedor_sugerido)}
+          ${campo("Días desde el envío", d.estatus === "PENDIENTE" ? diasTexto(d.dias) : "—")}
+        </div>
+        ${d.numero_sb ? `<div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Número de SB</p>
+          <p class="text-sm font-bold text-emerald-800">${escapeHtml(d.numero_sb)}</p></div>` : ""}
+        <div class="mt-5">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Descripción</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.descripcion || "—")}</p>
+        </div>
+        <div class="mt-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Alcance del servicio</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.alcance_servicio || "—")}</p>
+        </div>
+        <div class="mt-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Observaciones</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.observaciones || "—")}</p>
+        </div>
+        <div class="mt-5">
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Cotizaciones adjuntas</p>
+          <div class="flex flex-wrap gap-2">${adjuntos}</div>
+        </div>
+        <div class="mt-5">
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Comentarios y seguimiento</p>
+          <div class="space-y-2">${comentarios}</div>
+        </div>
+        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-slate-400">
+          <span>Creada: ${fechaHora(d.creado_en)}</span>
+          ${d.enviada_en ? `<span>Enviada: ${fechaHora(d.enviada_en)}</span>` : ""}
+          ${d.aprobada_en ? `<span>Aprobada: ${fechaHora(d.aprobada_en)}</span>` : ""}
+          ${d.rechazada_en ? `<span>Rechazada: ${fechaHora(d.rechazada_en)}</span>` : ""}
+          ${d.recordatorios_enviados ? `<span>Recordatorios: ${d.recordatorios_enviados}</span>` : ""}
+        </div>`;
+
+      $("detalleContenido").querySelectorAll("[data-descargar]").forEach(b => {
+        b.addEventListener("click", () => descargarAdjunto(Number(b.dataset.descargar), b.dataset.nombre).catch(e => toast(e.message, "error")));
+      });
+
+      renderDecision(d);
+
+      $("detalleAcciones").innerHTML = `
+        <button data-det-cerrar class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Cerrar</button>
+        <button data-det-pdf="${d.id_solicitud}" class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Generar PDF</button>`;
+    }
+
+    function renderDecision(d) {
+      if (d.estatus === "PENDIENTE") {
+        $("panelDecision").innerHTML = `
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <h3 class="text-sm font-bold">Agregar comentario de revisión</h3>
+            <div class="mt-3 flex flex-col gap-2 sm:flex-row">
+              <select id="tipoComentario" class="rounded-xl border border-slate-300 px-3 py-2 text-sm">
+                <option value="COMENTARIO">Comentario</option>
+                <option value="REVISION">Revisión</option>
+              </select>
+              <input id="textoComentario" placeholder="Escribe una observación…"
+                     class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
+              <button id="btnComentar" class="shrink-0 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold hover:bg-slate-100">Agregar</button>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <h3 class="text-sm font-bold text-emerald-800">Aprobar solicitud</h3>
+              <label class="mt-2 block text-xs font-semibold text-emerald-700">Número de SB (opcional)</label>
+              <input id="numeroSb" placeholder="Ej. SB-2026-00123"
+                     class="mt-1 w-full rounded-xl border border-emerald-300 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
+              <label class="mt-2 block text-xs font-semibold text-emerald-700">Comentario (opcional)</label>
+              <input id="comentarioAprobar" placeholder="Comentario de aprobación"
+                     class="mt-1 w-full rounded-xl border border-emerald-300 px-3 py-2 text-sm outline-none focus:border-emerald-500" />
+              <button id="btnAprobar" class="mt-3 w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Aprobar</button>
+            </div>
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+              <h3 class="text-sm font-bold text-red-800">Rechazar solicitud</h3>
+              <label class="mt-2 block text-xs font-semibold text-red-700">Motivo del rechazo</label>
+              <textarea id="motivoRechazo" rows="3" placeholder="Explica qué falta o por qué se rechaza"
+                        class="mt-1 w-full rounded-xl border border-red-300 px-3 py-2 text-sm outline-none focus:border-red-500"></textarea>
+              <button id="btnRechazar" class="mt-3 w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700">Rechazar</button>
+            </div>
+          </div>`;
+        $("btnComentar").addEventListener("click", () => comentar(d.id_solicitud));
+        $("btnAprobar").addEventListener("click", () => aprobar(d.id_solicitud));
+        $("btnRechazar").addEventListener("click", () => rechazar(d.id_solicitud));
+      } else {
+        $("panelDecision").innerHTML = `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+          Esta solicitud ya fue ${d.estatus === "APROBADA" ? "aprobada" : "rechazada"}. Consulta el seguimiento arriba.
+        </div>`;
+      }
+    }
+
+    async function comentar(id) {
+      const texto = $("textoComentario").value.trim();
+      if (!texto) return toast("Escribe el comentario", "error");
+      try {
+        await api(`/solicitudes/${id}/comentarios`, {
+          method: "POST", token: token(),
+          body: { texto, tipo: $("tipoComentario").value },
+        });
+        toast("Comentario agregado", "ok");
+        await recargarDetalle(id);
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    async function aprobar(id) {
+      if (!confirm("¿Aprobar esta solicitud? Se notificará al solicitante.")) return;
+      try {
+        const r = await api(`/solicitudes/${id}/aprobar`, {
+          method: "POST", token: token(),
+          body: { numero_sb: $("numeroSb").value.trim() || null, comentario: $("comentarioAprobar").value.trim() || null },
+        });
+        toast(r.correo?.estado === "SIMULADO" ? "Solicitud aprobada (correo simulado)" : "Solicitud aprobada", "ok");
+        await cargar();
+        await recargarDetalle(id);
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    async function rechazar(id) {
+      const motivo = $("motivoRechazo").value.trim();
+      if (motivo.length < 3) return toast("Escribe el motivo del rechazo", "error");
+      if (!confirm("¿Rechazar esta solicitud? Se notificará al solicitante.")) return;
+      try {
+        const r = await api(`/solicitudes/${id}/rechazar`, {
+          method: "POST", token: token(), body: { comentario: motivo },
+        });
+        toast(r.correo?.estado === "SIMULADO" ? "Solicitud rechazada (correo simulado)" : "Solicitud rechazada", "ok");
+        await cargar();
+        await recargarDetalle(id);
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    async function recargarDetalle(id) {
+      const d = await api("/solicitudes/" + id, { token: token() });
+      DETALLE = d;
+      renderDetalle(d);
+    }
+
+    $("detalleAcciones").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.hasAttribute("data-det-cerrar")) cerrarDetalle();
+      if (b.dataset.detPdf) abrirDocumento(Number(b.dataset.detPdf));
+    });
+
+    function cerrarDetalle() { $("modalDetalle").classList.add("hidden"); DETALLE = null; }
+    $("btnCerrarDetalle").addEventListener("click", cerrarDetalle);
+    document.addEventListener("keydown", e => { if (e.key === "Escape") cerrarDetalle(); });
+
+    iniciar();
+  </script>
+</body>
+</html>

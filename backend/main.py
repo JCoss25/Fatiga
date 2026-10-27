@@ -1,5 +1,8 @@
-"""API + servidor de la aplicacion del Test de Fatiga Laboral."""
+"""API + servidor de la aplicacion de Fatiga, Seguridad y Comercial."""
+import asyncio
+import logging
 import os
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
@@ -12,6 +15,9 @@ from sqlalchemy.orm import Session
 
 from . import scoring
 from .auth import require_reports, role_for
+from .comercial.db import SessionLocal as CotSessionLocal
+from .comercial.router import procesar_recordatorios as procesar_recordatorios_comercial
+from .comercial.router import router as comercial_router
 from .db import get_db
 from .models import FatigaFirma, FatigaPregunta, FatigaRespuesta, FatigaTest, Usuario
 from .indicadores import router as indicadores_router
@@ -22,9 +28,44 @@ ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
 CLOUDFRONT_BASE = "https://dvctlemkfvc4i.cloudfront.net/"
 
-app = FastAPI(title="Kogn1v1s · Fatiga y Seguridad")
+log = logging.getLogger("comercial")
+
+
+async def _loop_recordatorios_comercial():
+    """Recordatorios de solicitudes Comercial pendientes (cada 30 min)."""
+    await asyncio.sleep(20)
+    intervalo = max(5, int(os.getenv("RECORDATORIOS_INTERVALO_MIN", "30")))
+    while True:
+        try:
+            def run():
+                db = CotSessionLocal()
+                try:
+                    return procesar_recordatorios_comercial(db)
+                finally:
+                    db.close()
+
+            n = await asyncio.to_thread(run)
+            if n:
+                log.info("Recordatorios comercial enviados: %s", n)
+        except Exception as e:  # noqa: BLE001
+            log.warning("No se pudieron procesar recordatorios comercial: %s", str(e)[:300])
+        await asyncio.sleep(intervalo * 60)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = None
+    if os.getenv("RECORDATORIOS_ACTIVOS", "1").strip() == "1":
+        task = asyncio.create_task(_loop_recordatorios_comercial())
+    yield
+    if task:
+        task.cancel()
+
+
+app = FastAPI(title="Kogn1v1s · Fatiga, Seguridad y Comercial", lifespan=lifespan)
 app.include_router(sst_router)
 app.include_router(indicadores_router)
+app.include_router(comercial_router)
 
 
 @app.middleware("http")

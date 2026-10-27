@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comercial · Cotización de daños</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+  <main class="mx-auto max-w-4xl px-6 py-14">
+    <header class="mb-10 text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-600 text-2xl text-white shadow-lg">💼</div>
+      <h1 class="text-3xl font-bold tracking-tight">Comercial</h1>
+      <p class="mt-2 text-slate-500">Cotización de daños · Órdenes de Reparación TOT</p>
+    </header>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      <a href="solicitante.html"
+         class="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-xl">📝</div>
+        <h2 class="text-lg font-semibold">Soy solicitante</h2>
+        <p class="mt-1 text-sm text-slate-500">Crea la Orden de Reparación TOT, adjunta las cotizaciones y envíala a aprobación.</p>
+        <span class="mt-4 inline-block text-sm font-medium text-indigo-600 group-hover:underline">Entrar →</span>
+      </a>
+
+      <a href="aprobador.html"
+         class="group rounded-2xl border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+        <div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl">✅</div>
+        <h2 class="text-lg font-semibold">Soy aprobador</h2>
+        <p class="mt-1 text-sm text-slate-500">Revisa las solicitudes pendientes, comenta, aprueba con número de SB o rechaza.</p>
+        <span class="mt-4 inline-block text-sm font-medium text-emerald-600 group-hover:underline">Entrar →</span>
+      </a>
+    </div>
+
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-indigo-500"></span>Folio automático con consecutivo global</span>
+        <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-amber-500"></span>Recordatorio automático cada 2 días</span>
+        <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>PDF, comentarios e indicadores</span>
+      </div>
+    </div>
+
+    <p class="mt-10 text-center text-xs text-slate-400">
+      Módulo Comercial de Kogn1v1s · Fatiga, seguridad y comercial
+    </p>
+    <p class="mt-2 text-center text-xs">
+      <a href="../index.html" class="text-slate-500 hover:underline">← Volver al portal</a>
+    </p>
+  </main>
+</body>
+</html>

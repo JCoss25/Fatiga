@@ -144,8 +144,24 @@ Consola → **App Runner** → *Create service* → **Container registry (ECR)**
 | `DB_NAME` | `kogn1v1s` |
 | `DB_SSL` | `required` |
 | `ADMIN_PASSWORD` | *una clave fuerte para el panel* |
+| `SOLICITANTE_PASSWORD` | `Soli.2026` (o una clave fuerte) |
+| `APROBADOR_PASSWORD` | `Apro.2026` |
+| `SOLICITANTE_EMAIL` | cuenta Gmail del solicitante |
+| `APROBADOR_EMAIL` | cuenta Gmail del aprobador |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_TLS` | `starttls` |
+| `SMTP_USER` | cuenta Gmail exclusiva para notificaciones |
+| `SMTP_PASSWORD` | contraseña de aplicación de 16 caracteres |
+| `SMTP_FROM` | la misma cuenta de notificaciones |
+| `SMTP_FROM_NAME` | `Kogn1v1s - Comercial` |
+| `CORREO_SIMULADO` | `0` |
+| `APP_URL` | `https://<tu-servicio>.mx-central-1.awsapprunner.com` |
 
-> Puedes poner `ADMIN_PASSWORD` también como secreto en Secrets Manager.
+> No definas `COT_DATABASE_URL` en AWS: el módulo Comercial usa la misma base
+> MySQL/RDS (`kogn1v1s`) y crea solo tablas `cot_*`.
+>
+> Puedes poner las claves y la contraseña de Gmail también en Secrets Manager.
 
 **Health check**: path `/api/health`.
 
@@ -158,7 +174,7 @@ Al terminar, App Runner te da una URL tipo
 
 ## 7. Crear las tablas (una sola vez)
 
-Las tablas se crean ejecutando la migración. Opciones:
+Las tablas se crean ejecutando las migraciones. Opciones:
 
 **a) Ya están creadas** (se hicieron durante la prueba en local — `fatiga_preguntas`,
 `fatiga_tests`, `fatiga_respuestas`). No necesitas hacer nada más.
@@ -166,11 +182,16 @@ Las tablas se crean ejecutando la migración. Opciones:
 **b) Recrearlas/actualizarlas** desde una máquina con acceso a RDS:
 
 ```bash
-python db/migrate.py
+python db/migrate.py              # fatiga / SST
+python db/migrate_comercial.py    # tablas cot_* del módulo Comercial
 ```
 
 (Usa las credenciales de administrador del `.env`. En producción se recomienda
 un usuario con permiso solo `CREATE`/`ALTER` para esta tarea puntual.)
+
+> En AWS **no** definas `COT_DATABASE_URL`: con eso el módulo Comercial usa la
+> misma base `kogn1v1s` y crea las tablas `cot_*`. Para vaciar solo las
+> solicitudes: `python db/reset_comercial.py`.
 
 ---
 

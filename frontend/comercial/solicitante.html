@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solicitante · Cotización de daños</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .lbl { display:block; font-size:.75rem; font-weight:600; color:#475569; margin-bottom:.35rem; }
+    .inp { width:100%; border:1px solid #cbd5e1; border-radius:.75rem; padding:.6rem .8rem; font-size:.875rem; outline:none; background:#fff; }
+    .inp:focus { border-color:#6366f1; box-shadow:0 0 0 3px #e0e7ff; }
+    .req::after { content:" *"; color:#dc2626; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+  <!-- LOGIN -->
+  <div id="login" class="flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-xl text-white">📝</div>
+      <h1 class="text-center text-lg font-bold">Solicitante</h1>
+      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Cotización de daños · Orden de Reparación TOT</p>
+      <input id="pwd" type="password" placeholder="Clave de solicitante" autofocus
+             class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+      <div id="loginErr" class="mt-2 hidden text-sm text-red-600"></div>
+      <button id="btnLogin" class="mt-4 w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white hover:bg-indigo-700">Entrar</button>
+      <a href="index.html" class="mt-4 block text-center text-sm text-slate-400 hover:underline">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hidden">
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white">
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div class="flex items-center gap-3">
+          <a href="index.html" class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg text-white">🧾</a>
+          <div>
+            <h1 class="font-bold leading-tight">Cotizaciones · Solicitante</h1>
+            <p class="text-xs text-slate-500"><span id="quien">—</span> · Órdenes de Reparación TOT</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnNueva" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">+ Nueva solicitud</button>
+          <button id="btnSalir" class="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Borradores</p>
+          <p id="cBorradores" class="mt-1 text-2xl font-bold">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Pendientes de aprobación</p>
+          <p id="cPendientes" class="mt-1 text-2xl font-bold text-amber-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Aprobadas</p>
+          <p id="cAprobadas" class="mt-1 text-2xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Rechazadas</p>
+          <p id="cRechazadas" class="mt-1 text-2xl font-bold text-red-600">0</p>
+        </div>
+      </div>
+
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <input id="q" placeholder="Buscar folio, VIN, descripción, proveedor…"
+                 class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+          <select id="fEstatus" class="rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500">
+            <option value="">Todos los estatus</option>
+            <option value="BORRADOR">Borrador</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="APROBADA">Aprobada</option>
+            <option value="RECHAZADA">Rechazada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-4 py-3">Folio</th>
+                <th class="px-4 py-3">Fecha</th>
+                <th class="px-4 py-3">Solicitante / Cliente</th>
+                <th class="px-4 py-3">VIN / No. parte</th>
+                <th class="px-4 py-3">Descripción</th>
+                <th class="px-4 py-3 text-right">Total</th>
+                <th class="px-4 py-3">Estatus</th>
+                <th class="px-4 py-3">Días</th>
+                <th class="px-4 py-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <div id="vacio" class="hidden p-10 text-center text-sm text-slate-400">No hay solicitudes todavía. Crea la primera con “+ Nueva solicitud”.</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL FORMULARIO -->
+  <div id="modalForm" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 p-4">
+    <div class="mx-auto my-6 w-full max-w-4xl rounded-2xl bg-white shadow-xl">
+      <div class="flex items-start justify-between border-b border-slate-200 p-5">
+        <div>
+          <h2 id="formTitulo" class="text-lg font-bold">Nueva Orden de Reparación TOT</h2>
+          <p id="formFolio" class="text-xs text-slate-500">El folio se asigna automáticamente al guardar.</p>
+        </div>
+        <button type="button" id="btnCerrarForm" class="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100">✕</button>
+      </div>
+
+      <form id="formSol" class="p-5">
+        <input type="hidden" id="idSolicitud" value="" />
+
+        <section class="mb-6">
+          <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-indigo-700">1. Datos de la orden</h3>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="lbl req" for="serie">Serie / folio</label>
+              <select id="serie" class="inp">
+                <option value="LC">TOT LC</option>
+                <option value="NDVC">TOT NDVC</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl" for="fecha_solicitud">Fecha de solicitud</label>
+              <input id="fecha_solicitud" type="date" class="inp" />
+            </div>
+            <div>
+              <label class="lbl req" for="solicitante_cliente">Solicitante / Cliente</label>
+              <div class="flex gap-2">
+                <input id="solicitante_cliente" list="dl-cliente" class="inp" placeholder="Selecciona o escribe" />
+                <button type="button" class="shrink-0 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50"
+                        data-cat="cliente" data-input="solicitante_cliente" data-label="Cliente">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="lbl" for="vin">VIN</label>
+              <input id="vin" class="inp uppercase" maxlength="30" placeholder="17 caracteres" />
+            </div>
+            <div>
+              <label class="lbl" for="ubicacion">Ubicación</label>
+              <div class="flex gap-2">
+                <input id="ubicacion" list="dl-ubicacion" class="inp" placeholder="Selecciona o escribe" />
+                <button type="button" class="shrink-0 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50"
+                        data-cat="ubicacion" data-input="ubicacion" data-label="Ubicación">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="lbl" for="tipo_servicio">Tipo de servicio</label>
+              <div class="flex gap-2">
+                <input id="tipo_servicio" list="dl-tipo_servicio" class="inp" placeholder="Selecciona o escribe" />
+                <button type="button" class="shrink-0 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50"
+                        data-cat="tipo_servicio" data-input="tipo_servicio" data-label="Tipo de servicio">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="lbl" for="fecha_requerida">Fecha requerida / ETA</label>
+              <input id="fecha_requerida" type="date" class="inp" />
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-6">
+          <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-indigo-700">2. Detalle del daño</h3>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="lbl" for="no_parte">No. de parte</label>
+              <div class="flex gap-2">
+                <input id="no_parte" list="dl-no_parte" class="inp" placeholder="Selecciona o escribe" />
+                <button type="button" class="shrink-0 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50"
+                        data-cat="no_parte" data-input="no_parte" data-label="No. de parte">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="lbl req" for="cantidad">Cantidad</label>
+              <input id="cantidad" type="number" min="0" step="1" value="1" class="inp" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="lbl req" for="descripcion">Descripción</label>
+              <textarea id="descripcion" rows="3" class="inp" placeholder="Describe el daño o la necesidad"></textarea>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="lbl" for="alcance_servicio">Alcance del servicio</label>
+              <textarea id="alcance_servicio" rows="3" class="inp" placeholder="Qué incluye la reparación o el servicio"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-6">
+          <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-indigo-700">3. Cotización y proveedor</h3>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="lbl" for="proveedor_sugerido">Proveedor sugerido</label>
+              <div class="flex gap-2">
+                <input id="proveedor_sugerido" list="dl-proveedor" class="inp" placeholder="Selecciona o escribe" />
+                <button type="button" class="shrink-0 rounded-xl border border-slate-300 px-3 text-sm hover:bg-slate-50"
+                        data-cat="proveedor" data-input="proveedor_sugerido" data-label="Proveedor">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="lbl req" for="precio">Precio</label>
+              <input id="precio" type="number" min="0" step="0.01" value="0" class="inp" />
+            </div>
+            <div>
+              <label class="lbl" for="moneda">Moneda</label>
+              <select id="moneda" class="inp">
+                <option value="MXN">MXN · Peso mexicano</option>
+                <option value="USD">USD · Dólar</option>
+                <option value="EUR">EUR · Euro</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2 rounded-xl bg-slate-50 px-4 py-3 text-sm">
+              <span class="text-slate-500">Total calculado (cantidad × precio):</span>
+              <span id="totalPreview" class="ml-1 font-bold text-slate-800">$0.00 MXN</span>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="lbl" for="archivos">Cotización adjunta (PDF, imagen, Excel o Word)</label>
+              <input id="archivos" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.docx,.doc"
+                     class="block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-indigo-700" />
+              <p class="mt-1 text-xs text-slate-400">Máximo 6 MB por archivo. Puedes adjuntar varias cotizaciones.</p>
+              <div id="listaArchivos" class="mt-2 space-y-2"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mb-6">
+          <h3 class="mb-3 text-sm font-bold uppercase tracking-wide text-indigo-700">4. Observaciones</h3>
+          <textarea id="observaciones" rows="3" class="inp" placeholder="Notas adicionales para el aprobador"></textarea>
+        </section>
+
+        <div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 pt-4">
+          <button type="button" id="btnCancelar" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm hover:bg-slate-50">Cancelar</button>
+          <button type="button" id="btnGuardar" class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100">Guardar borrador</button>
+          <button type="button" id="btnEnviar" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Enviar solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE -->
+  <div id="modalDetalle" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/50 p-4">
+    <div class="mx-auto my-6 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+      <div class="flex items-start justify-between border-b border-slate-200 p-5">
+        <div>
+          <h2 id="detFolio" class="text-lg font-bold">—</h2>
+          <p id="detSub" class="text-xs text-slate-500">—</p>
+        </div>
+        <button type="button" id="btnCerrarDetalle" class="rounded-lg px-2 py-1 text-slate-400 hover:bg-slate-100">✕</button>
+      </div>
+      <div id="detalleContenido" class="p-5"></div>
+      <div id="detalleAcciones" class="flex flex-wrap justify-end gap-2 border-t border-slate-200 p-4"></div>
+    </div>
+  </div>
+
+  <datalist id="dl-cliente"></datalist>
+  <datalist id="dl-ubicacion"></datalist>
+  <datalist id="dl-tipo_servicio"></datalist>
+  <datalist id="dl-no_parte"></datalist>
+  <datalist id="dl-proveedor"></datalist>
+
+  <script>
+    let SOLICITUDES = [];
+    let DETALLE = null;
+    let ARCHIVOS_PENDIENTES = [];
+    let ADJUNTOS_EXISTENTES = [];
+
+    const $ = id => document.getElementById(id);
+    const token = () => SES.token();
+
+    /* ---------------- Sesión ---------------- */
+    async function mostrarPanel(r) {
+      $("login").classList.add("hidden");
+      $("panel").classList.remove("hidden");
+      $("quien").textContent = r.nombre || "Solicitante";
+      await cargarCatalogos().catch(() => {});
+      await cargar();
+    }
+
+    async function iniciar() {
+      const r = await validarSesion("solicitante");
+      if (r) mostrarPanel(r);
+    }
+
+    $("btnLogin").addEventListener("click", async () => {
+      const err = $("loginErr");
+      err.classList.add("hidden");
+      try {
+        const r = await entrar($("pwd").value, "solicitante");
+        mostrarPanel(r);
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove("hidden");
+      }
+    });
+    $("pwd").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin").click(); });
+    $("btnSalir").addEventListener("click", () => { SES.clear(); location.reload(); });
+
+    /* ---------------- Carga y filtros ---------------- */
+    async function cargar() {
+      const params = new URLSearchParams();
+      const q = $("q").value.trim();
+      const est = $("fEstatus").value;
+      if (q) params.set("q", q);
+      if (est) params.set("estatus", est);
+      const [lista, resumen] = await Promise.all([
+        api("/solicitudes?" + params.toString(), { token: token() }),
+        api("/resumen", { token: token() }),
+      ]);
+      SOLICITUDES = lista;
+      $("cBorradores").textContent = resumen.borradores;
+      $("cPendientes").textContent = resumen.pendientes;
+      $("cAprobadas").textContent = resumen.aprobadas;
+      $("cRechazadas").textContent = resumen.rechazadas;
+      renderTabla();
+    }
+
+    function renderTabla() {
+      const tbody = $("tbody");
+      const vacio = $("vacio");
+      if (!SOLICITUDES.length) {
+        tbody.innerHTML = "";
+        vacio.classList.remove("hidden");
+        return;
+      }
+      vacio.classList.add("hidden");
+      tbody.innerHTML = SOLICITUDES.map(s => {
+        const editable = s.estatus === "BORRADOR" || s.estatus === "RECHAZADA";
+        const acciones = [
+          `<button data-ver="${s.id_solicitud}" class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50">Ver</button>`,
+          editable ? `<button data-editar="${s.id_solicitud}" class="rounded-lg border border-indigo-300 px-2.5 py-1 text-xs text-indigo-700 hover:bg-indigo-50">Editar</button>` : "",
+          s.estatus === "BORRADOR" ? `<button data-enviar="${s.id_solicitud}" class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Enviar</button>` : "",
+          s.estatus !== "BORRADOR" ? `<button data-pdf="${s.id_solicitud}" class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50">PDF</button>` : "",
+        ].join(" ");
+        return `<tr class="hover:bg-slate-50">
+          <td class="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-slate-700">${escapeHtml(s.folio)}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-xs text-slate-500">${fecha(s.fecha_solicitud)}</td>
+          <td class="px-4 py-3 text-xs">${escapeHtml(s.solicitante_cliente || "—")}</td>
+          <td class="px-4 py-3 text-xs text-slate-500">${escapeHtml(s.vin || "—")}<br><span class="text-slate-400">${escapeHtml(s.no_parte || "—")}</span></td>
+          <td class="max-w-[240px] px-4 py-3 text-xs text-slate-600"><div class="truncate" title="${escapeHtml(s.descripcion)}">${escapeHtml(s.descripcion || "—")}</div></td>
+          <td class="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold">${money(s.total, s.moneda)}</td>
+          <td class="whitespace-nowrap px-4 py-3">${badgeEstatus(s.estatus)}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-xs ${s.vencida ? "font-semibold text-red-600" : "text-slate-500"}">${s.estatus === "PENDIENTE" ? diasTexto(s.dias) : "—"}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-right"><div class="flex justify-end gap-1.5">${acciones}</div></td>
+        </tr>`;
+      }).join("");
+    }
+
+    $("tbody").addEventListener("click", async e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.ver) return abrirDetalle(Number(b.dataset.ver));
+      if (b.dataset.editar) return abrirFormulario(Number(b.dataset.editar));
+      if (b.dataset.pdf) return abrirDocumento(Number(b.dataset.pdf));
+      if (b.dataset.enviar) return enviarSolicitud(Number(b.dataset.enviar));
+    });
+
+    let tmr;
+    $("q").addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(cargar, 300); });
+    $("fEstatus").addEventListener("change", cargar);
+
+    /* ---------------- Formulario ---------------- */
+    function limpiarFormulario() {
+      $("idSolicitud").value = "";
+      $("serie").value = "LC";
+      $("fecha_solicitud").value = new Date().toISOString().slice(0, 10);
+      ["solicitante_cliente","vin","ubicacion","tipo_servicio","no_parte","descripcion",
+       "alcance_servicio","proveedor_sugerido","observaciones"].forEach(id => $(id).value = "");
+      $("fecha_requerida").value = "";
+      $("cantidad").value = 1;
+      $("precio").value = 0;
+      $("moneda").value = "MXN";
+      $("archivos").value = "";
+      ARCHIVOS_PENDIENTES = [];
+      ADJUNTOS_EXISTENTES = [];
+      renderArchivos();
+      actualizarTotal();
+      $("formTitulo").textContent = "Nueva Orden de Reparación TOT";
+      $("formFolio").textContent = "El folio se asigna automáticamente al guardar.";
+    }
+
+    function abrirFormulario(id = null) {
+      limpiarFormulario();
+      $("modalForm").classList.remove("hidden");
+      if (id) cargarParaEditar(id);
+    }
+
+    async function cargarParaEditar(id) {
+      try {
+        const d = await api("/solicitudes/" + id, { token: token() });
+        DETALLE = d;
+        $("idSolicitud").value = d.id_solicitud;
+        $("serie").value = d.serie || "LC";
+        $("fecha_solicitud").value = d.fecha_solicitud || "";
+        $("solicitante_cliente").value = d.solicitante_cliente || "";
+        $("vin").value = d.vin || "";
+        $("ubicacion").value = d.ubicacion || "";
+        $("tipo_servicio").value = d.tipo_servicio || "";
+        $("no_parte").value = d.no_parte || "";
+        $("descripcion").value = d.descripcion || "";
+        $("cantidad").value = d.cantidad ?? 1;
+        $("alcance_servicio").value = d.alcance_servicio || "";
+        $("proveedor_sugerido").value = d.proveedor_sugerido || "";
+        $("precio").value = d.precio ?? 0;
+        $("moneda").value = d.moneda || "MXN";
+        $("fecha_requerida").value = d.fecha_requerida || "";
+        $("observaciones").value = d.observaciones || "";
+        ADJUNTOS_EXISTENTES = d.adjuntos_lista || [];
+        ARCHIVOS_PENDIENTES = [];
+        renderArchivos();
+        actualizarTotal();
+        $("formTitulo").textContent = "Editar Orden de Reparación TOT";
+        $("formFolio").textContent = `Folio ${d.folio} · ${ESTATUS[d.estatus]?.label || d.estatus}`;
+      } catch (e) {
+        toast(e.message, "error");
+        cerrarFormulario();
+      }
+    }
+
+    function actualizarTotal() {
+      const c = Number($("cantidad").value || 0);
+      const p = Number($("precio").value || 0);
+      $("totalPreview").textContent = money(c * p, $("moneda").value);
+    }
+    ["cantidad","precio","moneda"].forEach(id => $(id).addEventListener("input", actualizarTotal));
+
+    $("archivos").addEventListener("change", () => {
+      const nuevos = Array.from($("archivos").files || []);
+      for (const f of nuevos) {
+        if (f.size > 6 * 1024 * 1024) { toast(`“${f.name}” supera 6 MB`, "error"); continue; }
+        ARCHIVOS_PENDIENTES.push(f);
+      }
+      $("archivos").value = "";
+      renderArchivos();
+    });
+
+    function renderArchivos() {
+      const cont = $("listaArchivos");
+      const existentes = ADJUNTOS_EXISTENTES.map(a => `
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+          <div class="min-w-0">
+            <p class="truncate text-xs font-medium text-slate-700">${escapeHtml(a.nombre)}</p>
+            <p class="text-[11px] text-slate-400">${formatoBytes(a.tamano)} · ya guardado</p>
+          </div>
+          <div class="flex shrink-0 gap-1.5">
+            <button type="button" data-descargar="${a.id_adjunto}" data-nombre="${escapeHtml(a.nombre)}" class="rounded-lg border border-slate-300 px-2 py-1 text-xs hover:bg-white">Descargar</button>
+            <button type="button" data-quitar="${a.id_adjunto}" class="rounded-lg border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50">Quitar</button>
+          </div>
+        </div>`).join("");
+      const pendientes = ARCHIVOS_PENDIENTES.map((f, i) => `
+        <div class="flex items-center justify-between gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
+          <div class="min-w-0">
+            <p class="truncate text-xs font-medium text-indigo-800">${escapeHtml(f.name)}</p>
+            <p class="text-[11px] text-indigo-500">${formatoBytes(f.size)} · se subirá al guardar</p>
+          </div>
+          <button type="button" data-quitar-pendiente="${i}" class="shrink-0 rounded-lg border border-indigo-200 px-2 py-1 text-xs text-indigo-700 hover:bg-white">Quitar</button>
+        </div>`).join("");
+      cont.innerHTML = existentes + pendientes;
+    }
+
+    $("listaArchivos").addEventListener("click", async e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.dataset.descargar) {
+        try { await descargarAdjunto(Number(b.dataset.descargar), b.dataset.nombre); }
+        catch (err) { toast(err.message, "error"); }
+      }
+      if (b.dataset.quitar) {
+        if (!confirm("¿Quitar este adjunto?")) return;
+        try {
+          await api("/adjuntos/" + b.dataset.quitar, { method: "DELETE", token: token() });
+          ADJUNTOS_EXISTENTES = ADJUNTOS_EXISTENTES.filter(a => a.id_adjunto !== Number(b.dataset.quitar));
+          renderArchivos();
+          toast("Adjunto eliminado", "ok");
+        } catch (err) { toast(err.message, "error"); }
+      }
+      if (b.dataset.quitarPendiente !== undefined) {
+        ARCHIVOS_PENDIENTES.splice(Number(b.dataset.quitarPendiente), 1);
+        renderArchivos();
+      }
+    });
+
+    /* Catálogos: botón "+" */
+    document.querySelectorAll("[data-cat]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const valor = prompt(`Agregar ${btn.dataset.label} al catálogo:`);
+        if (!valor) return;
+        try {
+          await agregarCatalogo(btn.dataset.cat, valor, btn.dataset.label);
+          $(btn.dataset.input).value = valor.trim();
+        } catch (e) { toast(e.message, "error"); }
+      });
+    });
+
+    function payloadFormulario() {
+      return {
+        serie: $("serie").value,
+        fecha_solicitud: $("fecha_solicitud").value || null,
+        solicitante_cliente: $("solicitante_cliente").value.trim(),
+        vin: $("vin").value.trim(),
+        ubicacion: $("ubicacion").value.trim(),
+        tipo_servicio: $("tipo_servicio").value.trim(),
+        no_parte: $("no_parte").value.trim(),
+        descripcion: $("descripcion").value.trim(),
+        cantidad: Number($("cantidad").value || 0),
+        alcance_servicio: $("alcance_servicio").value.trim(),
+        proveedor_sugerido: $("proveedor_sugerido").value.trim(),
+        precio: Number($("precio").value || 0),
+        moneda: $("moneda").value,
+        fecha_requerida: $("fecha_requerida").value || null,
+        observaciones: $("observaciones").value.trim(),
+        datos: {},
+      };
+    }
+
+    async function guardar(enviar) {
+      const p = payloadFormulario();
+      if (enviar) {
+        const faltan = [];
+        if (!p.solicitante_cliente) faltan.push("Solicitante / Cliente");
+        if (!p.descripcion) faltan.push("Descripción");
+        if (p.cantidad <= 0) faltan.push("Cantidad");
+        if (p.precio <= 0) faltan.push("Precio");
+        if (faltan.length) { toast("Faltan: " + faltan.join(", "), "error"); return; }
+        if (!ARCHIVOS_PENDIENTES.length && !ADJUNTOS_EXISTENTES.length &&
+            !confirm("No has adjuntado ninguna cotización. ¿Enviar la solicitud de todos modos?")) return;
+      }
+      const id = $("idSolicitud").value;
+      const btn = enviar ? $("btnEnviar") : $("btnGuardar");
+      btn.disabled = true;
+      const textoOriginal = btn.textContent;
+      btn.textContent = "Guardando…";
+      try {
+        let sol;
+        if (id) sol = await api("/solicitudes/" + id, { method: "PUT", token: token(), body: p });
+        else sol = await api("/solicitudes", { method: "POST", token: token(), body: p });
+
+        // Si el alta fue nueva, deja el id para que un reintento actualice
+        // el mismo borrador en lugar de duplicarlo.
+        $("idSolicitud").value = sol.id_solicitud;
+        $("formFolio").textContent = `Folio ${sol.folio} · ${ESTATUS[sol.estatus]?.label || sol.estatus}`;
+
+        for (const f of ARCHIVOS_PENDIENTES) {
+          const base64 = await leerArchivoBase64(f);
+          await api(`/solicitudes/${sol.id_solicitud}/adjuntos`, {
+            method: "POST", token: token(),
+            body: { nombre: f.name, mime: f.type || "application/octet-stream", contenido_base64: base64 },
+          });
+        }
+        ARCHIVOS_PENDIENTES = [];
+
+        if (enviar) {
+          const r = await api(`/solicitudes/${sol.id_solicitud}/enviar`, { method: "POST", token: token() });
+          const c = r.correo || {};
+          toast(c.estado === "SIMULADO" ? "Solicitud enviada (correo simulado en la bandeja)" : "Solicitud enviada al aprobador", "ok");
+        } else {
+          toast("Borrador guardado", "ok");
+        }
+        cerrarFormulario();
+        await cargar();
+      } catch (e) {
+        toast(e.message, "error");
+        // Refresca la lista: si el borrador ya se creó, debe aparecer aunque
+        // falle la subida de un adjunto.
+        await cargar().catch(() => {});
+      } finally {
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
+      }
+    }
+
+    $("btnGuardar").addEventListener("click", () => guardar(false));
+    $("btnEnviar").addEventListener("click", () => guardar(true));
+    $("btnCancelar").addEventListener("click", cerrarFormulario);
+    $("btnCerrarForm").addEventListener("click", cerrarFormulario);
+    $("btnNueva").addEventListener("click", () => abrirFormulario());
+
+    function cerrarFormulario() {
+      $("modalForm").classList.add("hidden");
+      DETALLE = null;
+    }
+
+    /* ---------------- Detalle ---------------- */
+    async function abrirDetalle(id) {
+      try {
+        const d = await api("/solicitudes/" + id, { token: token() });
+        DETALLE = d;
+        renderDetalle(d);
+        $("modalDetalle").classList.remove("hidden");
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    function campo(label, valor) {
+      return `<div><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">${label}</p>
+        <p class="mt-0.5 text-sm text-slate-700">${escapeHtml(valor || "—")}</p></div>`;
+    }
+
+    function renderDetalle(d) {
+      $("detFolio").textContent = d.folio;
+      $("detSub").innerHTML = `${badgeEstatus(d.estatus)} <span class="ml-2">${fecha(d.fecha_solicitud)} · ${escapeHtml(d.solicitante_cliente || "")}</span>`;
+
+      const adjuntos = (d.adjuntos_lista || []).length
+        ? d.adjuntos_lista.map(a => `<button data-descargar="${a.id_adjunto}" data-nombre="${escapeHtml(a.nombre)}"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs hover:bg-slate-50">
+              📎 ${escapeHtml(a.nombre)} <span class="text-slate-400">(${formatoBytes(a.tamano)})</span></button>`).join(" ")
+        : `<span class="text-xs text-slate-400">Sin adjuntos</span>`;
+
+      const comentarios = (d.comentarios_lista || []).length
+        ? d.comentarios_lista.map(c => {
+            const color = c.tipo === "RECHAZO" ? "border-red-200 bg-red-50"
+              : c.tipo === "APROBACION" ? "border-emerald-200 bg-emerald-50"
+              : c.tipo === "REVISION" ? "border-amber-200 bg-amber-50"
+              : c.tipo === "SISTEMA" ? "border-slate-200 bg-slate-50"
+              : "border-slate-200 bg-white";
+            const etiqueta = { COMENTARIO:"Comentario", REVISION:"Revisión", APROBACION:"Aprobación", RECHAZO:"Rechazo", SISTEMA:"Sistema" }[c.tipo] || c.tipo;
+            return `<div class="rounded-xl border ${color} p-3">
+              <div class="flex flex-wrap items-center justify-between gap-1">
+                <p class="text-xs font-semibold text-slate-700">${escapeHtml(c.autor_nombre)} · ${etiqueta}</p>
+                <p class="text-[11px] text-slate-400">${fechaHora(c.creado_en)}</p>
+              </div>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-slate-600">${escapeHtml(c.texto)}</p>
+            </div>`;
+          }).join("")
+        : `<p class="text-xs text-slate-400">Sin comentarios todavía.</p>`;
+
+      const sb = d.numero_sb ? `<div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">Número de SB</p>
+          <p class="text-sm font-bold text-emerald-800">${escapeHtml(d.numero_sb)}</p></div>` : "";
+
+      $("detalleContenido").innerHTML = `
+        <div class="grid gap-4 sm:grid-cols-3">
+          ${campo("Serie", d.serie)}
+          ${campo("Fecha requerida / ETA", d.fecha_requerida ? fecha(d.fecha_requerida) : "—")}
+          ${campo("VIN", d.vin)}
+          ${campo("Ubicación", d.ubicacion)}
+          ${campo("Tipo de servicio", d.tipo_servicio)}
+          ${campo("No. de parte", d.no_parte)}
+          ${campo("Cantidad", d.cantidad)}
+          ${campo("Precio unitario", money(d.precio, d.moneda))}
+          ${campo("Total", money(d.total, d.moneda))}
+          ${campo("Proveedor sugerido", d.proveedor_sugerido)}
+          ${campo("Días desde el envío", d.estatus === "PENDIENTE" ? diasTexto(d.dias) : "—")}
+        </div>
+        ${sb ? `<div class="mt-4">${sb}</div>` : ""}
+        <div class="mt-5">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Descripción</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.descripcion || "—")}</p>
+        </div>
+        <div class="mt-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Alcance del servicio</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.alcance_servicio || "—")}</p>
+        </div>
+        <div class="mt-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Observaciones</p>
+          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${escapeHtml(d.observaciones || "—")}</p>
+        </div>
+        <div class="mt-5">
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Cotizaciones adjuntas</p>
+          <div class="flex flex-wrap gap-2">${adjuntos}</div>
+        </div>
+        <div class="mt-5">
+          <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Comentarios y seguimiento</p>
+          <div class="space-y-2">${comentarios}</div>
+        </div>
+        <div class="mt-5 flex flex-wrap items-center gap-x-5 gap-y-1 text-[11px] text-slate-400">
+          <span>Creada: ${fechaHora(d.creado_en)}</span>
+          ${d.enviada_en ? `<span>Enviada: ${fechaHora(d.enviada_en)}</span>` : ""}
+          ${d.aprobada_en ? `<span>Aprobada: ${fechaHora(d.aprobada_en)}</span>` : ""}
+          ${d.rechazada_en ? `<span>Rechazada: ${fechaHora(d.rechazada_en)}</span>` : ""}
+          ${d.recordatorios_enviados ? `<span>Recordatorios: ${d.recordatorios_enviados}</span>` : ""}
+        </div>`;
+
+      const editable = d.estatus === "BORRADOR" || d.estatus === "RECHAZADA";
+      const acciones = [
+        `<button data-det-cerrar class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Cerrar</button>`,
+        `<button data-det-pdf="${d.id_solicitud}" class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Generar PDF</button>`,
+        editable ? `<button data-det-editar="${d.id_solicitud}" class="rounded-xl border border-indigo-300 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Editar</button>` : "",
+        d.estatus === "BORRADOR" ? `<button data-det-enviar="${d.id_solicitud}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Enviar solicitud</button>` : "",
+        d.estatus === "RECHAZADA" ? `<button data-det-enviar="${d.id_solicitud}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Reenviar</button>` : "",
+      ].join("");
+      $("detalleAcciones").innerHTML = acciones;
+
+      $("detalleContenido").querySelectorAll("[data-descargar]").forEach(b => {
+        b.addEventListener("click", () => descargarAdjunto(Number(b.dataset.descargar), b.dataset.nombre).catch(e => toast(e.message, "error")));
+      });
+    }
+
+    $("detalleAcciones").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.hasAttribute("data-det-cerrar")) cerrarDetalle();
+      if (b.dataset.detPdf) abrirDocumento(Number(b.dataset.detPdf));
+      if (b.dataset.detEditar) { cerrarDetalle(); abrirFormulario(Number(b.dataset.detEditar)); }
+      if (b.dataset.detEnviar) enviarSolicitud(Number(b.dataset.detEnviar));
+    });
+
+    function cerrarDetalle() { $("modalDetalle").classList.add("hidden"); DETALLE = null; }
+    $("btnCerrarDetalle").addEventListener("click", cerrarDetalle);
+
+    async function enviarSolicitud(id) {
+      const s = SOLICITUDES.find(x => x.id_solicitud === id) || DETALLE;
+      if (!confirm(`¿Enviar la solicitud ${s ? s.folio : id} al aprobador? Se enviará un correo de aviso.`)) return;
+      try {
+        const r = await api(`/solicitudes/${id}/enviar`, { method: "POST", token: token() });
+        const c = r.correo || {};
+        toast(c.estado === "SIMULADO" ? "Solicitud enviada (correo simulado)" : "Solicitud enviada al aprobador", "ok");
+        cerrarDetalle();
+        await cargar();
+      } catch (e) { toast(e.message, "error"); }
+    }
+
+    /* ---------------- Arranque ---------------- */
+    $("formSol").addEventListener("submit", e => e.preventDefault());
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") { cerrarFormulario(); cerrarDetalle(); }
+    });
+    actualizarTotal();
+    iniciar();
+  </script>
+</body>
+</html>

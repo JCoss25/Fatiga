@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orden de Reparación TOT · PDF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:#e2e8f0; }
+    .hoja { width: 210mm; min-height: 297mm; margin: 24px auto; background:#fff; padding: 16mm; box-shadow: 0 10px 30px rgba(15,23,42,.12); }
+    .dato { border:1px solid #e2e8f0; border-radius:10px; padding:8px 10px; }
+    .dato .k { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:#64748b; font-weight:700; }
+    .dato .v { font-size:13px; color:#0f172a; margin-top:2px; word-break:break-word; }
+    @page { size: A4; margin: 12mm; }
+    @media screen and (max-width: 860px) {
+      .hoja { width: 100%; min-height: auto; margin: 12px auto; padding: 22px; }
+    }
+    @media screen and (max-width: 640px) {
+      #datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      #contenido .grid-cols-2 { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background:#fff; }
+      .no-print { display:none !important; }
+      .hoja { width:auto; min-height:auto; margin:0; padding:0; box-shadow:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN (solo si no hay sesión en esta pestaña) -->
+  <div id="login" class="flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-xl text-white">🧾</div>
+      <h1 class="text-center text-lg font-bold">Ver documento</h1>
+      <p class="mt-1 mb-5 text-center text-sm text-slate-500">Ingresa tu clave de solicitante o aprobador</p>
+      <input id="pwd" type="password" placeholder="Clave" autofocus
+             class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-100" />
+      <div id="loginErr" class="mt-2 hidden text-sm text-red-600"></div>
+      <button id="btnLogin" class="mt-4 w-full rounded-xl bg-slate-900 py-3 font-semibold text-white hover:bg-slate-800">Entrar</button>
+      <a href="index.html" class="mt-4 block text-center text-sm text-slate-400 hover:underline">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <!-- DOCUMENTO -->
+  <div id="contenido" class="hidden">
+    <div class="no-print mx-auto mt-5 flex max-w-[210mm] flex-wrap items-center justify-between gap-2 px-4">
+      <a href="index.html" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">← Inicio</a>
+      <div class="flex gap-2">
+        <button id="btnImprimir" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Generar PDF / Imprimir</button>
+        <button id="btnCerrar" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">Cerrar</button>
+      </div>
+    </div>
+
+    <div class="hoja">
+      <div class="flex items-start justify-between border-b-2 border-slate-900 pb-4">
+        <div>
+          <p class="text-[11px] font-bold uppercase tracking-[.2em] text-indigo-700">Kogn1v1s</p>
+          <h1 class="mt-1 text-2xl font-bold text-slate-900">Orden de Reparación TOT</h1>
+          <p class="mt-1 text-xs text-slate-500">Cotización de daños · Solicitud y aprobación</p>
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Folio</p>
+          <p id="folio" class="font-mono text-lg font-bold text-slate-900">—</p>
+          <div id="estatus" class="mt-1"></div>
+        </div>
+      </div>
+
+      <div id="datos" class="mt-5 grid grid-cols-3 gap-2"></div>
+
+      <div class="mt-5">
+        <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Descripción</p>
+        <p id="descripcion" class="mt-1 whitespace-pre-wrap border-l-4 border-indigo-200 pl-3 text-sm text-slate-700">—</p>
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Alcance del servicio</p>
+          <p id="alcance" class="mt-1 whitespace-pre-wrap text-sm text-slate-700">—</p>
+        </div>
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Observaciones</p>
+          <p id="observaciones" class="mt-1 whitespace-pre-wrap text-sm text-slate-700">—</p>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Cotizaciones adjuntas</p>
+        <div id="adjuntos" class="mt-1 flex flex-wrap gap-2 text-xs text-slate-600">—</div>
+      </div>
+
+      <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Total de la solicitud</p>
+            <p id="total" class="text-2xl font-bold text-slate-900">$0.00</p>
+          </div>
+          <div class="text-right text-xs text-slate-500">
+            <p>Cantidad: <span id="cantidad">—</span></p>
+            <p>Precio unitario: <span id="precio">—</span></p>
+            <p>Moneda: <span id="moneda">—</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Solicitante</p>
+          <p id="solicitante" class="mt-1 text-sm font-semibold text-slate-800">—</p>
+          <p id="solicitanteEmail" class="text-xs text-slate-500">—</p>
+          <p class="mt-3 text-[10px] font-bold uppercase tracking-wide text-slate-400">Fecha de solicitud</p>
+          <p id="fechaSolicitud" class="text-sm text-slate-700">—</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-4">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Aprobación</p>
+          <p id="aprobador" class="mt-1 text-sm font-semibold text-slate-800">—</p>
+          <p class="text-xs text-slate-500">Número de SB: <span id="numeroSb">—</span></p>
+          <p class="mt-3 text-[10px] font-bold uppercase tracking-wide text-slate-400">Fecha de decisión</p>
+          <p id="fechaDecision" class="text-sm text-slate-700">—</p>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Comentarios y seguimiento</p>
+        <div id="comentarios" class="mt-2 space-y-1 text-xs text-slate-600">—</div>
+      </div>
+
+      <div class="mt-8 flex items-end justify-between gap-6 border-t border-slate-200 pt-5">
+        <div class="w-1/2 border-t border-slate-400 pt-1 text-center text-[10px] text-slate-500">Firma del solicitante</div>
+        <div class="w-1/2 border-t border-slate-400 pt-1 text-center text-[10px] text-slate-500">Firma del aprobador</div>
+      </div>
+      <p id="pie" class="mt-5 text-center text-[9px] text-slate-400">—</p>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const ID = Number(new URLSearchParams(location.search).get("id") || 0);
+    let D = null;
+
+    function mostrarLogin() {
+      $("login").classList.remove("hidden");
+      $("contenido").classList.add("hidden");
+    }
+
+    async function cargar() {
+      if (!ID) {
+        $("login").innerHTML = `<div class="rounded-2xl border border-red-200 bg-white p-6 text-center text-sm text-red-600">Falta el identificador de la solicitud.</div>`;
+        return;
+      }
+      try {
+        D = await api("/solicitudes/" + ID, { token: SES.token() });
+        $("login").classList.add("hidden");
+        $("contenido").classList.remove("hidden");
+        pintar(D);
+      } catch (e) {
+        if (String(e.message).toLowerCase().includes("clave") || String(e.message).toLowerCase().includes("sesión")) {
+          mostrarLogin();
+        } else {
+          toast(e.message, "error");
+        }
+      }
+    }
+
+    function dato(k, v, span = 1) {
+      return `<div class="dato" style="grid-column: span ${span} / span ${span};">
+        <p class="k">${k}</p><p class="v">${escapeHtml(v || "—")}</p></div>`;
+    }
+
+    function pintar(d) {
+      $("folio").textContent = d.folio;
+      $("estatus").innerHTML = badgeEstatus(d.estatus);
+      $("datos").innerHTML = [
+        dato("Fecha de solicitud", fecha(d.fecha_solicitud)),
+        dato("Fecha requerida / ETA", d.fecha_requerida ? fecha(d.fecha_requerida) : "—"),
+        dato("Serie", d.serie),
+        dato("Solicitante / Cliente", d.solicitante_cliente),
+        dato("VIN", d.vin),
+        dato("Ubicación", d.ubicacion),
+        dato("Tipo de servicio", d.tipo_servicio),
+        dato("No. de parte", d.no_parte),
+        dato("Proveedor sugerido", d.proveedor_sugerido),
+        dato("Cantidad", d.cantidad),
+      ].join("");
+
+      $("descripcion").textContent = d.descripcion || "—";
+      $("alcance").textContent = d.alcance_servicio || "—";
+      $("observaciones").textContent = d.observaciones || "—";
+      $("total").textContent = money(d.total, d.moneda);
+      $("cantidad").textContent = d.cantidad;
+      $("precio").textContent = money(d.precio, d.moneda);
+      $("moneda").textContent = d.moneda;
+      $("solicitante").textContent = d.creado_por_nombre || "—";
+      $("solicitanteEmail").textContent = d.creado_por_email || "";
+      $("fechaSolicitud").textContent = fecha(d.fecha_solicitud);
+      $("aprobador").textContent = d.aprobador_nombre || "—";
+      $("numeroSb").textContent = d.numero_sb || "—";
+      $("fechaDecision").textContent = d.aprobada_en ? fechaHora(d.aprobada_en) : d.rechazada_en ? fechaHora(d.rechazada_en) : "Pendiente";
+
+      $("adjuntos").innerHTML = (d.adjuntos_lista || []).length
+        ? d.adjuntos_lista.map(a => `<span class="rounded-lg border border-slate-200 bg-white px-2 py-1">📎 ${escapeHtml(a.nombre)} <span class="text-slate-400">(${formatoBytes(a.tamano)})</span></span>`).join("")
+        : "Sin adjuntos";
+
+      $("comentarios").innerHTML = (d.comentarios_lista || []).length
+        ? d.comentarios_lista.map(c => {
+            const etiqueta = { COMENTARIO:"Comentario", REVISION:"Revisión", APROBACION:"Aprobación", RECHAZO:"Rechazo", SISTEMA:"Sistema" }[c.tipo] || c.tipo;
+            return `<p><strong>${escapeHtml(c.autor_nombre)}</strong> · ${etiqueta} · ${fechaHora(c.creado_en)}: ${escapeHtml(c.texto)}</p>`;
+          }).join("")
+        : "Sin comentarios.";
+
+      $("pie").textContent = `Documento generado el ${fechaHora(new Date().toISOString())} · Kogn1v1s · Cotización de daños`;
+    }
+
+    $("btnImprimir").addEventListener("click", () => window.print());
+    $("btnCerrar").addEventListener("click", () => window.close());
+
+    $("btnLogin").addEventListener("click", async () => {
+      const err = $("loginErr");
+      err.classList.add("hidden");
+      try {
+        const r = await api("/login", { method: "POST", token: $("pwd").value });
+        SES.set({ ...r, token: $("pwd").value });
+        await cargar();
+      } catch (e) {
+        err.textContent = e.message;
+        err.classList.remove("hidden");
+      }
+    });
+    $("pwd").addEventListener("keydown", e => { if (e.key === "Enter") $("btnLogin").click(); });
+
+    (async () => {
+      const token = SES.token();
+      if (token) {
+        try {
+          const r = await api("/login", { method: "POST", token });
+          SES.set({ ...r, token });
+          await cargar();
+          return;
+        } catch (_) { SES.clear(); }
+      }
+      mostrarLogin();
+    })();
+  </script>
+</body>
+</html>
