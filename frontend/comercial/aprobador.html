@@ -521,7 +521,14 @@
           method: "POST", token: token(),
           body: { numero_sb: $("numeroSb").value.trim() || null, comentario: $("comentarioAprobar").value.trim() || null },
         });
-        toast(r.correo?.estado === "SIMULADO" ? "Solicitud aprobada (correo simulado)" : "Solicitud aprobada", "ok");
+        const c = r.correo || {};
+        if (c.estado === "ERROR") {
+          toast("Solicitud aprobada, pero el correo falló: " + (c.error || "revisa Gmail"), "error");
+        } else if (c.estado === "SIMULADO") {
+          toast("Solicitud aprobada (correo simulado)", "ok");
+        } else {
+          toast("Solicitud aprobada", "ok");
+        }
         await cargar();
         await recargarDetalle(id);
       } catch (e) { toast(e.message, "error"); }
@@ -535,7 +542,14 @@
         const r = await api(`/solicitudes/${id}/rechazar`, {
           method: "POST", token: token(), body: { comentario: motivo },
         });
-        toast(r.correo?.estado === "SIMULADO" ? "Solicitud rechazada (correo simulado)" : "Solicitud rechazada", "ok");
+        const c = r.correo || {};
+        if (c.estado === "ERROR") {
+          toast("Solicitud rechazada, pero el correo falló: " + (c.error || "revisa Gmail"), "error");
+        } else if (c.estado === "SIMULADO") {
+          toast("Solicitud rechazada (correo simulado)", "ok");
+        } else {
+          toast("Solicitud rechazada", "ok");
+        }
         await cargar();
         await recargarDetalle(id);
       } catch (e) { toast(e.message, "error"); }

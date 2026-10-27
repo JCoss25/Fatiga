@@ -69,6 +69,16 @@ def enviar(destinatario: str, asunto: str, texto: str, html: Optional[str] = Non
                     smtp.login(SMTP_USER, SMTP_PASSWORD)
                 smtp.send_message(msg)
         return "ENVIADO", None
+    except smtplib.SMTPAuthenticationError:
+        return "ERROR", (
+            "Gmail rechazó el usuario/contraseña. Usa una contraseña de aplicación "
+            "de 16 caracteres (no la contraseña normal de la cuenta)."
+        )
+    except smtplib.SMTPServerDisconnected:
+        return "ERROR", (
+            "Gmail cerró la conexión. Verifica que SMTP_PASSWORD sea una contraseña "
+            "de aplicación (16 caracteres) y que la cuenta tenga verificación en 2 pasos."
+        )
     except Exception as e:  # noqa: BLE001
         return "ERROR", str(e)[:500]
 

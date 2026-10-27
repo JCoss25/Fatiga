@@ -613,7 +613,13 @@
         if (enviar) {
           const r = await api(`/solicitudes/${sol.id_solicitud}/enviar`, { method: "POST", token: token() });
           const c = r.correo || {};
-          toast(c.estado === "SIMULADO" ? "Solicitud enviada (correo simulado en la bandeja)" : "Solicitud enviada al aprobador", "ok");
+          if (c.estado === "ERROR") {
+            toast("Solicitud enviada, pero el correo falló: " + (c.error || "revisa la configuración de Gmail"), "error");
+          } else if (c.estado === "SIMULADO") {
+            toast("Solicitud enviada (correo simulado en la bandeja)", "ok");
+          } else {
+            toast("Solicitud enviada al aprobador", "ok");
+          }
         } else {
           toast("Borrador guardado", "ok");
         }
@@ -785,7 +791,13 @@
       try {
         const r = await api(`/solicitudes/${id}/enviar`, { method: "POST", token: token() });
         const c = r.correo || {};
-        toast(c.estado === "SIMULADO" ? "Solicitud enviada (correo simulado)" : "Solicitud enviada al aprobador", "ok");
+        if (c.estado === "ERROR") {
+          toast("Solicitud enviada, pero el correo falló: " + (c.error || "revisa la configuración de Gmail"), "error");
+        } else if (c.estado === "SIMULADO") {
+          toast("Solicitud enviada (correo simulado)", "ok");
+        } else {
+          toast("Solicitud enviada al aprobador", "ok");
+        }
         cerrarDetalle();
         await cargar();
       } catch (e) { toast(e.message, "error"); }
