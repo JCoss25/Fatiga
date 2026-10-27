@@ -95,6 +95,13 @@ Para Gmail hay que activar **verificación en 2 pasos** y generar una
 `CORREO_SIMULADO=1`, los correos se guardan en la bandeja interna del aprobador
 y se imprimen en consola.
 
+Prueba de envío (sin crear una solicitud):
+
+```bash
+python db/test_correo.py
+python db/test_correo.py otra_cuenta@gmail.com
+```
+
 ## Estructura
 
 ```
