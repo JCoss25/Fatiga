@@ -46,6 +46,20 @@ def statements(sql_text: str):
             yield stmt
 
 
+def ensure_column(cur, database: str, table: str, column: str, ddl: str):
+    """Agrega una columna solo si no existe (MySQL no soporta IF NOT EXISTS)."""
+    cur.execute(
+        "SELECT COUNT(*) FROM information_schema.columns "
+        "WHERE table_schema = %s AND table_name = %s AND column_name = %s",
+        (database, table, column),
+    )
+    if cur.fetchone()[0] == 0:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+        print(f"  + columna {table}.{column} agregada")
+    else:
+        print(f"  = columna {table}.{column} ya existe")
+
+
 def main():
     if engine.url.get_backend_name() == "sqlite":
         from backend.comercial.db import SessionLocal
@@ -95,6 +109,18 @@ def main():
                 print(f"  [{n}] OK  {first}...")
             except pymysql.MySQLError as e:
                 print(f"  [!] Omitida (codigo {e.args[0]}): {first}...")
+        # Actualiza instalaciones que ya tenian las tablas antes de los
+        # estados COMPRADO/CERRADO y de las fechas de seguimiento.
+        ensure_column(cur, name, "cot_solicitudes", "aprobacion_notificada_en", "DATETIME NULL")
+        ensure_column(cur, name, "cot_solicitudes", "comprado_en", "DATETIME NULL")
+        ensure_column(cur, name, "cot_solicitudes", "cerrado_en", "DATETIME NULL")
+        cur.execute(
+            "ALTER TABLE cot_solicitudes MODIFY estatus "
+            "ENUM('BORRADOR','PENDIENTE','APROBADA','COMPRADO','CERRADO','RECHAZADA','CANCELADA') "
+            "NOT NULL DEFAULT 'BORRADOR'"
+        )
+        print("  [ok] estatus con COMPRADO/CERRADO")
+
         cur.execute("SHOW TABLES LIKE 'cot_%'")
         print("\nTablas cot_:", [r[0] for r in cur.fetchall()])
     finally:

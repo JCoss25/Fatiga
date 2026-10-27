@@ -61,6 +61,10 @@ class ComentarioIn(BaseModel):
     tipo: str = Field(default="COMENTARIO", pattern="^(COMENTARIO|REVISION)$")
 
 
+class CambioEstatusIn(BaseModel):
+    estatus: str = Field(pattern="^(COMPRADO|CERRADO)$")
+
+
 class AdjuntoIn(BaseModel):
     nombre: str = Field(min_length=1, max_length=200)
     mime: str = Field(default="application/octet-stream", max_length=120)

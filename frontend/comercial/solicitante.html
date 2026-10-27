@@ -49,7 +49,9 @@
     </header>
 
     <main class="mx-auto max-w-6xl px-4 py-6">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div id="alertas" class="mb-4 hidden space-y-2"></div>
+
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs font-medium text-slate-500">Borradores</p>
           <p id="cBorradores" class="mt-1 text-2xl font-bold">0</p>
@@ -59,8 +61,16 @@
           <p id="cPendientes" class="mt-1 text-2xl font-bold text-amber-600">0</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs font-medium text-slate-500">Aprobadas</p>
+          <p class="text-xs font-medium text-slate-500">Aprobadas · por comprar</p>
           <p id="cAprobadas" class="mt-1 text-2xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Compradas · por cerrar</p>
+          <p id="cCompradas" class="mt-1 text-2xl font-bold text-sky-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Cerradas</p>
+          <p id="cCerradas" class="mt-1 text-2xl font-bold text-slate-700">0</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs font-medium text-slate-500">Rechazadas</p>
@@ -77,6 +87,8 @@
             <option value="BORRADOR">Borrador</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="APROBADA">Aprobada</option>
+            <option value="COMPRADO">Comprado</option>
+            <option value="CERRADO">Cerrado</option>
             <option value="RECHAZADA">Rechazada</option>
           </select>
         </div>
@@ -283,6 +295,8 @@
       $("quien").textContent = r.nombre || "Solicitante";
       await cargarCatalogos().catch(() => {});
       await cargar();
+      const id = new URLSearchParams(location.search).get("id");
+      if (id) abrirDetalle(Number(id));
     }
 
     async function iniciar() {
@@ -319,9 +333,44 @@
       $("cBorradores").textContent = resumen.borradores;
       $("cPendientes").textContent = resumen.pendientes;
       $("cAprobadas").textContent = resumen.aprobadas;
+      $("cCompradas").textContent = resumen.compradas ?? 0;
+      $("cCerradas").textContent = resumen.cerradas ?? 0;
       $("cRechazadas").textContent = resumen.rechazadas;
+      pintarAlertas(resumen);
       renderTabla();
     }
+
+    function pintarAlertas(r) {
+      const items = [];
+      if (r.aprobadas > 0) {
+        items.push({
+          color: "border-emerald-200 bg-emerald-50 text-emerald-800",
+          texto: `Tienes ${r.aprobadas} solicitud(es) aprobada(s) pendiente(s) de marcar como comprada.`,
+          estatus: "APROBADA", label: "Ver aprobadas",
+        });
+      }
+      if ((r.compradas ?? 0) > 0) {
+        items.push({
+          color: "border-sky-200 bg-sky-50 text-sky-800",
+          texto: `Tienes ${r.compradas} solicitud(es) comprada(s) pendiente(s) de cerrar.`,
+          estatus: "COMPRADO", label: "Ver compradas",
+        });
+      }
+      const cont = $("alertas");
+      cont.innerHTML = items.map(i => `
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border ${i.color} px-4 py-3 text-sm">
+          <span>🔔 ${i.texto}</span>
+          <button data-filtro-alerta="${i.estatus}" class="rounded-lg border border-current px-3 py-1 text-xs font-semibold">${i.label}</button>
+        </div>`).join("");
+      cont.classList.toggle("hidden", !items.length);
+    }
+
+    $("alertas").addEventListener("click", e => {
+      const b = e.target.closest("[data-filtro-alerta]");
+      if (!b) return;
+      $("fEstatus").value = b.dataset.filtroAlerta;
+      cargar();
+    });
 
     function renderTabla() {
       const tbody = $("tbody");
@@ -338,6 +387,8 @@
           `<button data-ver="${s.id_solicitud}" class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50">Ver</button>`,
           editable ? `<button data-editar="${s.id_solicitud}" class="rounded-lg border border-indigo-300 px-2.5 py-1 text-xs text-indigo-700 hover:bg-indigo-50">Editar</button>` : "",
           s.estatus === "BORRADOR" ? `<button data-enviar="${s.id_solicitud}" class="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-indigo-700">Enviar</button>` : "",
+          s.estatus === "APROBADA" ? `<button data-comprar="${s.id_solicitud}" class="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-700">Comprado</button>` : "",
+          s.estatus === "COMPRADO" ? `<button data-cerrar="${s.id_solicitud}" class="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold text-white hover:bg-slate-900">Cerrar</button>` : "",
           s.estatus !== "BORRADOR" ? `<button data-pdf="${s.id_solicitud}" class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs hover:bg-slate-50">PDF</button>` : "",
         ].join(" ");
         return `<tr class="hover:bg-slate-50">
@@ -361,6 +412,8 @@
       if (b.dataset.editar) return abrirFormulario(Number(b.dataset.editar));
       if (b.dataset.pdf) return abrirDocumento(Number(b.dataset.pdf));
       if (b.dataset.enviar) return enviarSolicitud(Number(b.dataset.enviar));
+      if (b.dataset.comprar) return cambiarEstatus(Number(b.dataset.comprar), "COMPRADO");
+      if (b.dataset.cerrar) return cambiarEstatus(Number(b.dataset.cerrar), "CERRADO");
     });
 
     let tmr;
@@ -674,17 +727,22 @@
           <span>Creada: ${fechaHora(d.creado_en)}</span>
           ${d.enviada_en ? `<span>Enviada: ${fechaHora(d.enviada_en)}</span>` : ""}
           ${d.aprobada_en ? `<span>Aprobada: ${fechaHora(d.aprobada_en)}</span>` : ""}
+          ${d.aprobacion_notificada_en ? `<span>Aprobación notificada: ${fechaHora(d.aprobacion_notificada_en)}</span>` : ""}
+          ${d.comprado_en ? `<span>Comprado: ${fechaHora(d.comprado_en)}</span>` : ""}
+          ${d.cerrado_en ? `<span>Cerrado: ${fechaHora(d.cerrado_en)}</span>` : ""}
           ${d.rechazada_en ? `<span>Rechazada: ${fechaHora(d.rechazada_en)}</span>` : ""}
           ${d.recordatorios_enviados ? `<span>Recordatorios: ${d.recordatorios_enviados}</span>` : ""}
         </div>`;
 
       const editable = d.estatus === "BORRADOR" || d.estatus === "RECHAZADA";
       const acciones = [
-        `<button data-det-cerrar class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Cerrar</button>`,
+        `<button data-det-close class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Cerrar</button>`,
         `<button data-det-pdf="${d.id_solicitud}" class="rounded-xl border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Generar PDF</button>`,
         editable ? `<button data-det-editar="${d.id_solicitud}" class="rounded-xl border border-indigo-300 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Editar</button>` : "",
         d.estatus === "BORRADOR" ? `<button data-det-enviar="${d.id_solicitud}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Enviar solicitud</button>` : "",
         d.estatus === "RECHAZADA" ? `<button data-det-enviar="${d.id_solicitud}" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Reenviar</button>` : "",
+        d.estatus === "APROBADA" ? `<button data-det-comprar="${d.id_solicitud}" class="rounded-xl bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">Marcar como comprado</button>` : "",
+        d.estatus === "COMPRADO" ? `<button data-det-cerrar="${d.id_solicitud}" class="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">Marcar como cerrado</button>` : "",
       ].join("");
       $("detalleAcciones").innerHTML = acciones;
 
@@ -696,14 +754,30 @@
     $("detalleAcciones").addEventListener("click", e => {
       const b = e.target.closest("button");
       if (!b) return;
-      if (b.hasAttribute("data-det-cerrar")) cerrarDetalle();
+      if (b.hasAttribute("data-det-close")) cerrarDetalle();
       if (b.dataset.detPdf) abrirDocumento(Number(b.dataset.detPdf));
       if (b.dataset.detEditar) { cerrarDetalle(); abrirFormulario(Number(b.dataset.detEditar)); }
       if (b.dataset.detEnviar) enviarSolicitud(Number(b.dataset.detEnviar));
+      if (b.dataset.detComprar) cambiarEstatus(Number(b.dataset.detComprar), "COMPRADO");
+      if (b.dataset.detCerrar) cambiarEstatus(Number(b.dataset.detCerrar), "CERRADO");
     });
 
     function cerrarDetalle() { $("modalDetalle").classList.add("hidden"); DETALLE = null; }
     $("btnCerrarDetalle").addEventListener("click", cerrarDetalle);
+
+    async function cambiarEstatus(id, estatus) {
+      const etiqueta = estatus === "COMPRADO" ? "comprada" : "cerrada";
+      if (!confirm(`¿Marcar la solicitud como ${etiqueta}?`)) return;
+      const enDetalle = DETALLE && DETALLE.id_solicitud === id;
+      try {
+        await api(`/solicitudes/${id}/estatus`, {
+          method: "POST", token: token(), body: { estatus },
+        });
+        toast(`Solicitud marcada como ${etiqueta}`, "ok");
+        await cargar();
+        if (enDetalle) await abrirDetalle(id);
+      } catch (e) { toast(e.message, "error"); }
+    }
 
     async function enviarSolicitud(id) {
       const s = SOLICITUDES.find(x => x.id_solicitud === id) || DETALLE;

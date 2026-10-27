@@ -57,9 +57,17 @@ Flujo:
 2. Al enviarla se manda correo al aprobador.
 3. Si sigue **PENDIENTE 2 días**, se envía un recordatorio y se repite cada 48 h.
 4. El aprobador puede **aprobar con número de SB** o **rechazar con motivo**.
-5. El solicitante recibe el resultado y puede **generar el PDF**.
-6. El aprobador cuenta con **indicadores** (pendientes, vencidas, tiempo promedio,
-   efectividad, recordatorios y volumen por mes).
+5. Al aprobar, el solicitante **recibe el correo de aprobación** y el portal le
+   muestra un aviso de que tiene solicitudes aprobadas pendientes de compra.
+6. Cuando se realiza la compra, el solicitante marca la solicitud como
+   **COMPRADO**; al terminar el servicio, la marca como **CERRADO**.
+7. El solicitante puede **generar el PDF** en cualquier momento.
+8. El aprobador cuenta con **indicadores** (pendientes, vencidas, aprobadas,
+   compradas, cerradas, tiempo promedio, efectividad, recordatorios y volumen
+   por mes).
+
+Estatus: `BORRADOR → PENDIENTE → APROBADA → COMPRADO → CERRADO`
+(o `RECHAZADA` si el aprobador la rechaza).
 
 ### Base local vs producción
 

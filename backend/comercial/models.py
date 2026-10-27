@@ -16,7 +16,7 @@ from .db import Base
 # En MySQL es BIGINT AUTO_INCREMENT; en SQLite debe ser INTEGER para autoincrementar.
 BigIntPK = BigInteger().with_variant(Integer, "sqlite")
 
-ESTATUS = ("BORRADOR", "PENDIENTE", "APROBADA", "RECHAZADA", "CANCELADA")
+ESTATUS = ("BORRADOR", "PENDIENTE", "APROBADA", "COMPRADO", "CERRADO", "RECHAZADA", "CANCELADA")
 TIPOS_COMENTARIO = ("COMENTARIO", "REVISION", "APROBACION", "RECHAZO", "SISTEMA")
 TIPOS_CORREO = ("SOLICITUD", "RECORDATORIO", "APROBACION", "RECHAZO")
 
@@ -62,6 +62,9 @@ class CotSolicitud(Base):
     # --- Fechas de control / recordatorios ---
     enviada_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     aprobada_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    aprobacion_notificada_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    comprado_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    cerrado_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     rechazada_en: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     ultimo_recordatorio: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     recordatorios_enviados: Mapped[int] = mapped_column(Integer, default=0)

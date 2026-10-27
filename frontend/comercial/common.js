@@ -70,6 +70,8 @@ const ESTATUS = {
   BORRADOR:  { label: "Borrador",  clase: "bg-slate-100 text-slate-600 ring-slate-200",   punto: "bg-slate-400" },
   PENDIENTE: { label: "Pendiente", clase: "bg-amber-100 text-amber-800 ring-amber-200",   punto: "bg-amber-500" },
   APROBADA:  { label: "Aprobada",  clase: "bg-emerald-100 text-emerald-700 ring-emerald-200", punto: "bg-emerald-500" },
+  COMPRADO:  { label: "Comprado",  clase: "bg-sky-100 text-sky-700 ring-sky-200",         punto: "bg-sky-500" },
+  CERRADO:   { label: "Cerrado",   clase: "bg-slate-800 text-slate-100 ring-slate-700",   punto: "bg-emerald-400" },
   RECHAZADA: { label: "Rechazada", clase: "bg-red-100 text-red-700 ring-red-200",         punto: "bg-red-500" },
   CANCELADA: { label: "Cancelada", clase: "bg-slate-100 text-slate-500 ring-slate-200",   punto: "bg-slate-400" },
 };

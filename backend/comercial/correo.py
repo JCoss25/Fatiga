@@ -165,14 +165,31 @@ def correo_decision(sol, aprobada: bool, comentario: Optional[str]) -> Tuple[str
     estado = "APROBADA" if aprobada else "RECHAZADA"
     asunto = f"Tu solicitud {sol.folio} fue {estado.lower()}"
     sb = f"Número de SB: {sol.numero_sb}\n" if sol.numero_sb else ""
+    enlace_solicitud = f"{APP_URL}/solicitante.html?id={sol.id_solicitud}"
+    seguimiento = (
+        "Cuando se realice la compra, marca la solicitud como COMPRADA y al terminar como CERRADA:\n"
+        f"{enlace_solicitud}\n\n"
+        if aprobada else
+        "Puedes corregir y reenviar la solicitud en:\n"
+        f"{enlace_solicitud}\n\n"
+    )
     texto = (
         f"La solicitud {sol.folio} fue {estado}.\n\n"
         f"{sb}"
         f"Comentario del aprobador: {comentario or '—'}\n\n"
+        f"{seguimiento}"
         f"Consulta el documento en:\n{APP_URL}/documento.html?id={sol.id_solicitud}\n"
     )
     color = "#047857" if aprobada else "#b91c1c"
     fondo = "#ecfdf5" if aprobada else "#fef2f2"
+    seguimiento_html = (
+        f'<p style="margin:14px 0 0;font-size:13px;color:#334155;">Cuando se realice la compra, entra a '
+        f'<a href="{enlace_solicitud}">tu solicitud</a> y marca <strong>COMPRADO</strong>; '
+        f'al terminar, <strong>CERRADO</strong>.</p>'
+        if aprobada else
+        f'<p style="margin:14px 0 0;font-size:13px;color:#334155;">Puedes corregir y reenviar la solicitud en '
+        f'<a href="{enlace_solicitud}">el portal</a>.</p>'
+    )
     cuerpo = f"""
       <p style="margin:0 0 14px;">La solicitud <strong>{sol.folio}</strong> fue
         <strong style="color:{color};">{estado}</strong>.</p>
@@ -180,5 +197,6 @@ def correo_decision(sol, aprobada: bool, comentario: Optional[str]) -> Tuple[str
         {f'<div><strong>Número de SB:</strong> {sol.numero_sb}</div>' if sol.numero_sb else ''}
         <div style="margin-top:6px;"><strong>Comentario:</strong> {comentario or '—'}</div>
       </div>
+      {seguimiento_html}
     """
     return asunto, texto, _html(f"Solicitud {estado.lower()}", cuerpo, "Ver documento", f"{APP_URL}/documento.html?id={sol.id_solicitud}")

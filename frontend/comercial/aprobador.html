@@ -50,7 +50,7 @@
     </header>
 
     <main class="mx-auto max-w-6xl px-4 py-6">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs font-medium text-slate-500">Pendientes</p>
           <p id="cPendientes" class="mt-1 text-2xl font-bold text-amber-600">0</p>
@@ -60,8 +60,16 @@
           <p id="cVencidas" class="mt-1 text-2xl font-bold text-red-600">0</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
-          <p class="text-xs font-medium text-slate-500">Aprobadas</p>
+          <p class="text-xs font-medium text-slate-500">Aprobadas · por comprar</p>
           <p id="cAprobadas" class="mt-1 text-2xl font-bold text-emerald-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Compradas · por cerrar</p>
+          <p id="cCompradas" class="mt-1 text-2xl font-bold text-sky-600">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-4">
+          <p class="text-xs font-medium text-slate-500">Cerradas</p>
+          <p id="cCerradas" class="mt-1 text-2xl font-bold text-slate-700">0</p>
         </div>
         <div class="rounded-2xl border border-slate-200 bg-white p-4">
           <p class="text-xs font-medium text-slate-500">Rechazadas</p>
@@ -101,6 +109,8 @@
               <option value="">Todos los estatus</option>
               <option value="PENDIENTE" selected>Pendiente</option>
               <option value="APROBADA">Aprobada</option>
+              <option value="COMPRADO">Comprado</option>
+              <option value="CERRADO">Cerrado</option>
               <option value="RECHAZADA">Rechazada</option>
             </select>
           </div>
@@ -243,6 +253,8 @@
       $("cPendientes").textContent = ind.pendientes;
       $("cVencidas").textContent = ind.vencidas;
       $("cAprobadas").textContent = ind.aprobadas;
+      $("cCompradas").textContent = ind.compradas ?? 0;
+      $("cCerradas").textContent = ind.cerradas ?? 0;
       $("cRechazadas").textContent = ind.rechazadas;
       $("cTiempo").textContent = ind.tiempo_promedio_horas ? `${ind.tiempo_promedio_horas} h` : "—";
       $("cEfectividad").textContent = `${ind.efectividad}%`;
@@ -255,7 +267,7 @@
             <div class="h-4 flex-1 overflow-hidden rounded-full bg-slate-100">
               <div class="h-full rounded-full bg-indigo-500" style="width:${Math.round((m.total / max) * 100)}%"></div>
             </div>
-            <span class="w-24 shrink-0 text-right text-slate-500">${m.total} total · ${m.aprobadas} OK</span>
+            <span class="w-28 shrink-0 text-right text-slate-500">${m.total} total · ${m.cerradas ?? 0} cerr.</span>
           </div>`).join("")
         : `<p class="text-xs text-slate-400">Sin datos todavía.</p>`;
     }
@@ -422,6 +434,9 @@
           <span>Creada: ${fechaHora(d.creado_en)}</span>
           ${d.enviada_en ? `<span>Enviada: ${fechaHora(d.enviada_en)}</span>` : ""}
           ${d.aprobada_en ? `<span>Aprobada: ${fechaHora(d.aprobada_en)}</span>` : ""}
+          ${d.aprobacion_notificada_en ? `<span>Aprobación notificada: ${fechaHora(d.aprobacion_notificada_en)}</span>` : ""}
+          ${d.comprado_en ? `<span>Comprado: ${fechaHora(d.comprado_en)}</span>` : ""}
+          ${d.cerrado_en ? `<span>Cerrado: ${fechaHora(d.cerrado_en)}</span>` : ""}
           ${d.rechazada_en ? `<span>Rechazada: ${fechaHora(d.rechazada_en)}</span>` : ""}
           ${d.recordatorios_enviados ? `<span>Recordatorios: ${d.recordatorios_enviados}</span>` : ""}
         </div>`;
@@ -476,8 +491,12 @@
         $("btnAprobar").addEventListener("click", () => aprobar(d.id_solicitud));
         $("btnRechazar").addEventListener("click", () => rechazar(d.id_solicitud));
       } else {
+        const estadoTexto = {
+          APROBADA: "aprobada", COMPRADO: "comprada",
+          CERRADO: "cerrada", RECHAZADA: "rechazada",
+        }[d.estatus] || "cerrada";
         $("panelDecision").innerHTML = `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-          Esta solicitud ya fue ${d.estatus === "APROBADA" ? "aprobada" : "rechazada"}. Consulta el seguimiento arriba.
+          Esta solicitud ya fue ${estadoTexto}. Consulta el seguimiento arriba.
         </div>`;
       }
     }

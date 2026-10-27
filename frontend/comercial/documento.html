@@ -18,7 +18,8 @@
     }
     @media screen and (max-width: 640px) {
       #datos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      #contenido .grid-cols-2 { grid-template-columns: 1fr; }
+      #contenido .grid-cols-2,
+      #contenido .grid-cols-3 { grid-template-columns: 1fr; }
     }
     @media print {
       body { background:#fff; }
@@ -121,6 +122,21 @@
         </div>
       </div>
 
+      <div class="mt-4 grid grid-cols-3 gap-2">
+        <div class="rounded-xl border border-slate-200 p-3">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Aprobación notificada</p>
+          <p id="fechaNotificacion" class="mt-1 text-xs text-slate-700">—</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Comprado</p>
+          <p id="fechaCompra" class="mt-1 text-xs text-slate-700">—</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Cerrado</p>
+          <p id="fechaCierre" class="mt-1 text-xs text-slate-700">—</p>
+        </div>
+      </div>
+
       <div class="mt-5">
         <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Comentarios y seguimiento</p>
         <div id="comentarios" class="mt-2 space-y-1 text-xs text-slate-600">—</div>
@@ -197,6 +213,9 @@
       $("aprobador").textContent = d.aprobador_nombre || "—";
       $("numeroSb").textContent = d.numero_sb || "—";
       $("fechaDecision").textContent = d.aprobada_en ? fechaHora(d.aprobada_en) : d.rechazada_en ? fechaHora(d.rechazada_en) : "Pendiente";
+      $("fechaNotificacion").textContent = d.aprobacion_notificada_en ? fechaHora(d.aprobacion_notificada_en) : "—";
+      $("fechaCompra").textContent = d.comprado_en ? fechaHora(d.comprado_en) : "—";
+      $("fechaCierre").textContent = d.cerrado_en ? fechaHora(d.cerrado_en) : "—";
 
       $("adjuntos").innerHTML = (d.adjuntos_lista || []).length
         ? d.adjuntos_lista.map(a => `<span class="rounded-lg border border-slate-200 bg-white px-2 py-1">📎 ${escapeHtml(a.nombre)} <span class="text-slate-400">(${formatoBytes(a.tamano)})</span></span>`).join("")

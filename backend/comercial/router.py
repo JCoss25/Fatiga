@@ -25,7 +25,7 @@ from .correo import (
 )
 from .db import get_db
 from .models import CotAdjunto, CotCatalogo, CotComentario, CotCorreo, CotSolicitud
-from .schemas import AdjuntoIn, CatalogoIn, ComentarioIn, DecisionIn, SolicitudIn
+from .schemas import AdjuntoIn, CambioEstatusIn, CatalogoIn, ComentarioIn, DecisionIn, SolicitudIn
 
 router = APIRouter(prefix="/api/comercial", tags=["Comercial · Cotización de daños"])
 
@@ -143,6 +143,9 @@ def _out(sol: CotSolicitud) -> dict:
         "numero_sb": sol.numero_sb,
         "enviada_en": _iso(sol.enviada_en),
         "aprobada_en": _iso(sol.aprobada_en),
+        "aprobacion_notificada_en": _iso(sol.aprobacion_notificada_en),
+        "comprado_en": _iso(sol.comprado_en),
+        "cerrado_en": _iso(sol.cerrado_en),
         "rechazada_en": _iso(sol.rechazada_en),
         "ultimo_recordatorio": _iso(sol.ultimo_recordatorio),
         "recordatorios_enviados": sol.recordatorios_enviados or 0,
@@ -428,6 +431,13 @@ def aprobar(
     db.commit()
     db.refresh(sol)
     correo = _enviar_decision_correo(db, sol, True, comentario)
+    # Paso extra: deja constancia de que el solicitante fue notificado.
+    sol.aprobacion_notificada_en = datetime.now()
+    _comentario(
+        db, sol, "sistema", "Sistema", "SISTEMA",
+        f"Aprobación notificada al solicitante ({correo.get('estado', 'SIMULADO')}).",
+    )
+    db.commit()
     db.refresh(sol)
     return {**_out(sol), "correo": correo}
 
@@ -456,6 +466,35 @@ def rechazar(
     return {**_out(sol), "correo": correo}
 
 
+@router.post("/solicitudes/{id_solicitud}/estatus")
+def cambiar_estatus(
+    id_solicitud: int,
+    payload: CambioEstatusIn,
+    role: str = Depends(require_solicitante),
+    db: Session = Depends(get_db),
+):
+    """El solicitante marca la solicitud como COMPRADO y luego CERRADO."""
+    sol = _get_sol(db, id_solicitud, role)
+    if payload.estatus == "COMPRADO":
+        if sol.estatus != "APROBADA":
+            raise HTTPException(status_code=409, detail="Solo una solicitud aprobada puede marcarse como comprada")
+        sol.estatus = "COMPRADO"
+        sol.comprado_en = datetime.now()
+        texto = "Solicitud marcada como comprada."
+    else:
+        if sol.estatus != "COMPRADO":
+            raise HTTPException(status_code=409, detail="Solo una solicitud comprada puede cerrarse")
+        sol.estatus = "CERRADO"
+        sol.cerrado_en = datetime.now()
+        texto = "Solicitud cerrada."
+
+    quien = identidad(role)
+    _comentario(db, sol, role, quien["nombre"], "SISTEMA", texto)
+    db.commit()
+    db.refresh(sol)
+    return _out(sol)
+
+
 # --------------------------------------------------------------------------
 # Consulta
 # --------------------------------------------------------------------------
@@ -472,7 +511,7 @@ def listar_solicitudes(
         stmt = stmt.where(CotSolicitud.estatus != "BORRADOR")
     if estatus:
         estatus = estatus.upper()
-        if estatus not in ("BORRADOR", "PENDIENTE", "APROBADA", "RECHAZADA", "CANCELADA"):
+        if estatus not in ("BORRADOR", "PENDIENTE", "APROBADA", "COMPRADO", "CERRADO", "RECHAZADA", "CANCELADA"):
             raise HTTPException(status_code=422, detail="Estatus no válido")
         stmt = stmt.where(CotSolicitud.estatus == estatus)
     if q:
@@ -552,6 +591,8 @@ def resumen(role: str = Depends(require_any), db: Session = Depends(get_db)):
         "borradores": int(rows.get("BORRADOR", 0)),
         "pendientes": int(rows.get("PENDIENTE", 0)),
         "aprobadas": int(rows.get("APROBADA", 0)),
+        "compradas": int(rows.get("COMPRADO", 0)),
+        "cerradas": int(rows.get("CERRADO", 0)),
         "rechazadas": int(rows.get("RECHAZADA", 0)),
         "canceladas": int(rows.get("CANCELADA", 0)),
     }
@@ -562,12 +603,15 @@ def indicadores(role: str = Depends(require_aprobador), db: Session = Depends(ge
     rows = db.scalars(select(CotSolicitud).where(CotSolicitud.estatus != "BORRADOR")).all()
     pendientes = [s for s in rows if s.estatus == "PENDIENTE"]
     aprobadas = [s for s in rows if s.estatus == "APROBADA"]
+    compradas = [s for s in rows if s.estatus == "COMPRADO"]
+    cerradas = [s for s in rows if s.estatus == "CERRADO"]
+    aprobadas_historicas = [s for s in rows if s.estatus in ("APROBADA", "COMPRADO", "CERRADO")]
     rechazadas = [s for s in rows if s.estatus == "RECHAZADA"]
-    decisiones = len(aprobadas) + len(rechazadas)
+    decisiones = len(aprobadas_historicas) + len(rechazadas)
 
     tiempos = [
         (s.aprobada_en - s.enviada_en).total_seconds() / 3600
-        for s in aprobadas
+        for s in aprobadas_historicas
         if s.aprobada_en and s.enviada_en
     ]
     promedio_horas = round(sum(tiempos) / len(tiempos), 1) if tiempos else 0
@@ -579,10 +623,17 @@ def indicadores(role: str = Depends(require_aprobador), db: Session = Depends(ge
     por_mes = {}
     for s in rows:
         clave = (s.creado_en or datetime.now()).strftime("%Y-%m")
-        item = por_mes.setdefault(clave, {"mes": clave, "total": 0, "aprobadas": 0, "rechazadas": 0})
+        item = por_mes.setdefault(clave, {
+            "mes": clave, "total": 0, "aprobadas": 0, "compradas": 0,
+            "cerradas": 0, "rechazadas": 0,
+        })
         item["total"] += 1
         if s.estatus == "APROBADA":
             item["aprobadas"] += 1
+        elif s.estatus == "COMPRADO":
+            item["compradas"] += 1
+        elif s.estatus == "CERRADO":
+            item["cerradas"] += 1
         elif s.estatus == "RECHAZADA":
             item["rechazadas"] += 1
 
@@ -591,8 +642,11 @@ def indicadores(role: str = Depends(require_aprobador), db: Session = Depends(ge
         "pendientes": len(pendientes),
         "vencidas": len(vencidas),
         "aprobadas": len(aprobadas),
+        "compradas": len(compradas),
+        "cerradas": len(cerradas),
+        "aprobadas_historicas": len(aprobadas_historicas),
         "rechazadas": len(rechazadas),
-        "efectividad": round((len(aprobadas) / decisiones) * 100, 1) if decisiones else 0,
+        "efectividad": round((len(aprobadas_historicas) / decisiones) * 100, 1) if decisiones else 0,
         "tiempo_promedio_horas": promedio_horas,
         "tiempo_promedio_dias": round(promedio_horas / 24, 1) if promedio_horas else 0,
         "recordatorios": sum((s.recordatorios_enviados or 0) for s in rows),

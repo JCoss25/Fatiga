@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS cot_solicitudes (
   id_solicitud          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   folio                 VARCHAR(30)  NOT NULL,
   serie                 VARCHAR(10)  NOT NULL DEFAULT 'LC',
-  estatus               ENUM('BORRADOR','PENDIENTE','APROBADA','RECHAZADA','CANCELADA')
+  estatus               ENUM('BORRADOR','PENDIENTE','APROBADA','COMPRADO','CERRADO','RECHAZADA','CANCELADA')
                         NOT NULL DEFAULT 'BORRADOR',
   fecha_solicitud       DATE NOT NULL,
   solicitante_cliente   VARCHAR(160) NOT NULL DEFAULT '',
@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS cot_solicitudes (
   numero_sb             VARCHAR(60)  NULL,
   enviada_en            DATETIME NULL,
   aprobada_en           DATETIME NULL,
+  aprobacion_notificada_en DATETIME NULL,
+  comprado_en           DATETIME NULL,
+  cerrado_en            DATETIME NULL,
   rechazada_en          DATETIME NULL,
   ultimo_recordatorio   DATETIME NULL,
   recordatorios_enviados INT NOT NULL DEFAULT 0,
