@@ -23,6 +23,7 @@ from .models import FatigaFirma, FatigaPregunta, FatigaRespuesta, FatigaTest, Us
 from .indicadores import router as indicadores_router
 from .schemas import PreguntaOut, TestIn, TestOut
 from .sst import router as sst_router
+from .tz import hoy
 
 ROOT = Path(__file__).resolve().parent.parent
 FRONTEND = ROOT / "frontend"
@@ -243,7 +244,7 @@ def crear_test(payload: TestIn, request: Request, db: Session = Depends(get_db))
         empresa=usuario.empresa,
         turno=payload.turno,
         hora_entrada=parse_time(payload.hora_entrada),
-        fecha=payload.fecha or date.today(),
+        fecha=payload.fecha or hoy(),
         puntaje_total=resultado["puntaje_total"],
         semaforo=resultado["semaforo"],
         critica_con_2pts=1 if resultado["critica_con_2pts"] else 0,
@@ -361,7 +362,7 @@ def resumen(
 ):
     """Totales en un rango de fechas (desde–hasta) + patron repetido en el rango."""
     if not desde and not hasta:
-        desde = hasta = fecha or date.today().isoformat()
+        desde = hasta = fecha or hoy().isoformat()
     else:
         desde = desde or hasta
         hasta = hasta or desde

@@ -41,8 +41,12 @@ function clearToken() {
 }
 
 function hoyISO() {
-  const d = new Date();
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  // Fecha de HOY en zona horaria de Monterrey (independiente de la zona del dispositivo).
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Monterrey", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const o = Object.fromEntries(p.map(x => [x.type, x.value]));
+  return `${o.year}-${o.month}-${o.day}`;
 }
 
 function toast(msg, type = "info") {

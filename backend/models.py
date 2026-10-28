@@ -9,6 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
+from .tz import ahora
 
 
 class Usuario(Base):
@@ -64,7 +65,7 @@ class FatigaTest(Base):
     observaciones: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     firma_trabajador: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
     validador_nombre: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
     ip_origen: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
 
     respuestas: Mapped[list["FatigaRespuesta"]] = relationship(
@@ -90,7 +91,7 @@ class FatigaFirma(Base):
 
     id_test: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     firma_imagen: Mapped[str] = mapped_column(Text)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
 
 
 # --------------------------------------------------------------------------
@@ -120,7 +121,7 @@ class SstAuditoria(Base):
     porcentaje: Mapped[int] = mapped_column(SmallInteger)
     firma_trabajador: Mapped[str] = mapped_column(Text)
     firma_auditor: Mapped[str] = mapped_column(Text)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
     ip_origen: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
 
     respuestas: Mapped[list["SstRespuesta"]] = relationship(
@@ -148,7 +149,7 @@ class SstAuditor(Base):
     id_auditor: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(String(120), unique=True)
     activo: Mapped[int] = mapped_column(SmallInteger, default=1)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
 
 
 class SstArea(Base):
@@ -159,5 +160,5 @@ class SstArea(Base):
     id_area: Mapped[int] = mapped_column(SmallInteger, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(String(120), unique=True)
     activo: Mapped[int] = mapped_column(SmallInteger, default=1)
-    creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
 

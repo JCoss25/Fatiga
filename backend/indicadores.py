@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from .auth import require_reports
 from .db import get_db
+from .tz import hoy
 from .models import (
     FatigaPregunta,
     FatigaRespuesta,
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/api/indicadores", tags=["Indicadores"])
 
 def _rango(desde: Optional[date], hasta: Optional[date]):
     if not hasta:
-        hasta = date.today()
+        hasta = hoy()
     if not desde:
         desde = hasta - timedelta(days=30)
     if desde > hasta:

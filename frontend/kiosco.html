@@ -158,7 +158,7 @@
     let state = {};          // {idPregunta: valor}
     let empleado = null;     // {id_usuario, nombre_completo, ...}
     document.getElementById("fechaHoy").textContent =
-      new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Monterrey" });
 
     // ---------- Carga de preguntas ----------
     async function cargarPreguntas() {
