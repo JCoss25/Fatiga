@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de reportes · Fatiga y Seguridad</title>
+  <link rel="icon" type="image/svg+xml" href="favicon-panel.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="common.js"></script>
   <script src="demo-data.js"></script>
@@ -539,8 +540,21 @@
       return (y && m && d) ? `${d}/${m}/${y}` : iso;
     };
 
+    const FAVICONS = {
+      fatiga: "favicon-fatiga.svg",
+      sst: "favicon-sst.svg",
+      indicadores: "favicon-panel.svg",
+      catalogos: "favicon-catalogos.svg",
+    };
+
+    function setFavicon(name) {
+      const link = document.querySelector('link[rel="icon"]');
+      if (link && name) link.href = name;
+    }
+
     function setTab(t) {
       if (t === "catalogos" && getRole() !== "admin") return;
+      setFavicon(FAVICONS[t]);
       const vistas = { fatiga: "vistaFatiga", sst: "vistaSst", indicadores: "vistaIndicadores", catalogos: "vistaCatalogos" };
       Object.entries(vistas).forEach(([k, id]) => {
         document.getElementById(id).classList.toggle("hidden", k !== t);
