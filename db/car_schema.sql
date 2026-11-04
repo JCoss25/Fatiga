@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS car_tarjetas (
   KEY idx_car_area (area)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Sin FOREIGN KEY física: la integridad se valida en la API y así el usuario
+-- de aplicación (kogn_rw) puede crear la tabla sin el privilegio REFERENCES.
 CREATE TABLE IF NOT EXISTS car_evidencias (
   id_evidencia BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_tarjeta   BIGINT UNSIGNED NULL,
@@ -62,10 +64,7 @@ CREATE TABLE IF NOT EXISTS car_evidencias (
   creado_en    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_evidencia),
   UNIQUE KEY uq_car_archivo (archivo),
-  KEY idx_car_evidencia_tarjeta (id_tarjeta),
-  CONSTRAINT fk_car_evidencia_tarjeta
-    FOREIGN KEY (id_tarjeta) REFERENCES car_tarjetas (id_tarjeta)
-    ON DELETE CASCADE
+  KEY idx_car_evidencia_tarjeta (id_tarjeta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Áreas iniciales. El administrador puede quitarlas o agregar más desde
