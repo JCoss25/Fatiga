@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAR · Tarjeta de control y administración de riesgos</title>
+  <link rel="icon" type="image/svg+xml" href="favicon-car.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="common.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    canvas { touch-action: none; }
+
+    .opt-card {
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      border-radius: .9rem;
+      padding: 1rem;
+      height: 100%;
+      transition: border-color .15s, background-color .15s, box-shadow .15s, transform .15s;
+    }
+    label.tipo:hover .opt-card { border-color: #5eead4; transform: translateY(-1px); }
+    label.tipo > input:checked + .opt-card {
+      border-color: #0d9488;
+      background: #f0fdfa;
+      box-shadow: inset 0 0 0 1px #0d9488;
+    }
+
+    .seg {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #475569;
+      border-radius: .75rem;
+      padding: .8rem 1rem;
+      font-weight: 600;
+      font-size: .875rem;
+      transition: border-color .15s, background-color .15s, color .15s, box-shadow .15s;
+    }
+    .seg:hover { border-color: #5eead4; }
+    .seg--on {
+      border-color: #0d9488;
+      background: #f0fdfa;
+      color: #0f766e;
+      box-shadow: inset 0 0 0 1px #0d9488;
+    }
+
+    .risk {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: .9rem;
+      padding: .9rem;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+      font-size: .875rem;
+      font-weight: 600;
+      color: #475569;
+      transition: border-color .15s, background-color .15s, box-shadow .15s;
+    }
+    .risk--amarillo.risk--on { border-color: #f59e0b; background: #fffbeb; color: #92400e; box-shadow: inset 0 0 0 1px #f59e0b; }
+    .risk--rojo.risk--on { border-color: #dc2626; background: #fef2f2; color: #991b1b; box-shadow: inset 0 0 0 1px #dc2626; }
+
+    /* Hoja del documento CAR: se usa en vista previa y al imprimir. */
+    .car-doc {
+      background: #fff;
+      color: #111827;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      line-height: 1.35;
+      padding: 12mm;
+      min-height: 279mm;
+      box-sizing: border-box;
+    }
+    .car-doc .doc-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #111827;
+      padding-bottom: 6px;
+    }
+    .car-doc .doc-logo { height: 44px; width: auto; }
+    .car-doc .doc-title { flex: 1; text-align: right; }
+    .car-doc .doc-title h1 { font-size: 13px; letter-spacing: .3px; margin: 0; font-weight: 800; }
+    .car-doc .doc-title p { margin: 2px 0 0; font-size: 8px; color: #4b5563; }
+    .car-doc .band {
+      background: #ecfdf5;
+      border: 1px solid #111827;
+      border-top: 0;
+      padding: 3px 6px;
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+    }
+    .car-doc table { width: 100%; border-collapse: collapse; }
+    .car-doc td, .car-doc th { border: 1px solid #111827; padding: 4px 6px; vertical-align: top; }
+    .car-doc .lbl {
+      font-size: 8px;
+      text-transform: uppercase;
+      color: #374151;
+      width: 30%;
+      background: #fafafa;
+      font-weight: 700;
+    }
+    .car-doc .val { font-size: 10px; font-weight: 600; }
+    .car-doc .prose { min-height: 18mm; white-space: pre-wrap; font-size: 10px; }
+    .car-doc .box {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border: 1.4px solid #111827;
+      text-align: center;
+      line-height: 9px;
+      font-weight: 800;
+      font-size: 9px;
+      margin-right: 4px;
+      vertical-align: -1px;
+    }
+    .car-doc .checkrow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; }
+    .car-doc .sig {
+      height: 16mm;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2px;
+    }
+    .car-doc .sig img { max-height: 14mm; max-width: 95%; object-fit: contain; }
+    .car-doc .evidencias { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .car-doc .evidencias img { width: 100%; height: 26mm; object-fit: cover; border: 1px solid #111827; }
+    .car-doc .video-chip {
+      display: inline-block;
+      border: 1px solid #111827;
+      padding: 3px 6px;
+      margin: 2px 4px 2px 0;
+      font-size: 8px;
+      background: #f8fafc;
+    }
+    .car-doc .watermark {
+      text-align: center;
+      font-size: 8px;
+      color: #0f766e;
+      letter-spacing: 1.2px;
+      font-weight: 700;
+      margin-top: 7px;
+    }
+    .car-doc .red-note {
+      border: 1px solid #111827;
+      border-top: 0;
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 3px 6px;
+      font-size: 8.5px;
+      font-weight: 700;
+    }
+
+    #printDoc { display: none; }
+
+    @media print {
+      @page { size: letter; margin: 0; }
+      body.printing > *:not(#printDoc) { display: none !important; }
+      body.printing #printDoc { display: block !important; }
+      body.printing { background: #fff !important; }
+      .car-doc { min-height: auto; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+
+  <!-- Éxito -->
+  <div id="success" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-teal-100 text-3xl">✅</div>
+      <h2 class="text-xl font-bold">Tarjeta CAR emitida</h2>
+      <p class="mt-1 text-sm text-slate-500">Quedó registrada y pendiente de cierre administrativo. El administrador completará la parte 5 desde el panel de reportes.</p>
+      <div id="successBody" class="mt-5"></div>
+      <div class="mt-6 grid grid-cols-2 gap-2">
+        <button id="btnNueva" type="button" class="rounded-xl border border-slate-300 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Nueva tarjeta</button>
+        <button id="btnVerUltima" type="button" class="rounded-xl bg-teal-600 py-3 text-sm font-semibold text-white hover:bg-teal-700">Ver tarjeta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista previa -->
+  <div id="preview" class="hidden fixed inset-0 z-50 bg-slate-900/80 p-2 sm:p-6">
+    <div class="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-slate-800 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 px-4 py-3">
+        <h2 class="font-semibold text-white">Vista previa · CAR</h2>
+        <div class="flex gap-2">
+          <button id="btnCerrarPreview" type="button" class="rounded-lg border border-slate-500 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700">Cerrar</button>
+          <button id="btnImprimirPreview" type="button" class="rounded-lg bg-teal-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-teal-400">Imprimir / PDF</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto bg-slate-700 p-3 sm:p-6">
+        <div id="previewPaper" class="mx-auto w-full max-w-[820px] overflow-hidden bg-white shadow-2xl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor de impresión -->
+  <div id="printDoc"></div>
+
+  <div class="mx-auto max-w-4xl px-4 py-8">
+    <header class="mb-6">
+      <a href="index.html" class="text-sm text-slate-500 hover:underline">← Inicio</a>
+      <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold leading-tight">Tarjeta de control y administración de riesgos</h1>
+          <p class="text-sm text-slate-500">CAR · Emisión del hallazgo · el cierre lo hace el administrador desde el panel</p>
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
+              <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+              Conectado a la base local / RDS
+            </div>
+            <button id="btnEjemplo" type="button" class="text-sm font-semibold text-teal-700 hover:underline">Ver ejemplo →</button>
+          </div>
+        </div>
+        <div class="hidden text-right sm:block">
+          <div class="text-xs uppercase tracking-wide text-slate-400">Fecha</div>
+          <div id="fechaHoy" class="font-semibold"></div>
+        </div>
+      </div>
+    </header>
+
+    <form id="form" class="space-y-5">
+
+      <!-- 1. Datos del observador -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">1</span>
+          Datos del observador / emisor
+        </h2>
+
+        <div id="empSelected" class="hidden">
+          <div class="flex items-center gap-4 rounded-xl border border-teal-200 bg-teal-50 p-3">
+            <img id="empFoto" class="hidden h-12 w-12 rounded-full object-cover" alt="" />
+            <div class="min-w-0 flex-1">
+              <div id="empNombre" class="truncate font-semibold"></div>
+              <div id="empMeta" class="truncate text-sm text-slate-500"></div>
+            </div>
+            <button id="empChange" type="button" class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50">Cambiar</button>
+          </div>
+        </div>
+
+        <div id="empSearchWrap">
+          <label class="mb-1 block text-xs font-medium text-slate-500" for="empSearch">Nombre del observador</label>
+          <input id="empSearch" autocomplete="off" placeholder="Busca por nombre, No. de empleado o departamento…"
+                 class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100" />
+          <div id="empResults" class="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 empty:hidden"></div>
+          <p class="mt-2 text-xs text-slate-400">Se consulta la misma tabla de personal que alimenta el test de Fatiga.</p>
+          <p id="empFuente" class="mt-1 hidden rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"></p>
+        </div>
+
+        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="fecha">Fecha de emisión</label>
+            <input id="fecha" type="date" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="area">Área / departamento del observador</label>
+            <select id="area" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
+              <option value="">Cargando áreas…</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-400">Lista administrada desde Panel → Catálogos → Áreas CAR.</p>
+          </div>
+          <div class="sm:col-span-2">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <b>Folio:</b> se asigna automáticamente al guardar con el formato <span class="font-mono">CAR-AAAA-###</span>. Es la referencia para que el administrador cierre la parte 5.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Observación o riesgo -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">2</span>
+          Observación o riesgo identificado
+        </h2>
+        <p class="mb-3 text-sm text-slate-500">Señala una opción, describe con detalle y adjunta evidencia si es necesario.</p>
+
+        <div id="tipoGroup" class="grid gap-3 sm:grid-cols-2">
+          <label class="tipo block cursor-pointer">
+            <input type="radio" name="tipo" value="ACTO_SEGURO" class="sr-only" />
+            <div class="opt-card">
+              <div class="flex items-start gap-3">
+                <span class="text-xl">✅</span>
+                <div>
+                  <div class="font-semibold text-slate-800">Acto seguro</div>
+                  <div class="mt-0.5 text-xs text-slate-500">Conducta que protege la integridad.</div>
+                </div>
+              </div>
+            </div>
+          </label>
+          <label class="tipo block cursor-pointer">
+            <input type="radio" name="tipo" value="CONDICION_INSEGURA" class="sr-only" />
+            <div class="opt-card">
+              <div class="flex items-start gap-3">
+                <span class="text-xl">⚠️</span>
+                <div>
+                  <div class="font-semibold text-slate-800">Condición insegura</div>
+                  <div class="mt-0.5 text-xs text-slate-500">Instalación, equipo o entorno en riesgo.</div>
+                </div>
+              </div>
+            </div>
+          </label>
+          <label class="tipo block cursor-pointer">
+            <input type="radio" name="tipo" value="ACTO_INSEGURO" class="sr-only" />
+            <div class="opt-card">
+              <div class="flex items-start gap-3">
+                <span class="text-xl">🚫</span>
+                <div>
+                  <div class="font-semibold text-slate-800">Acto inseguro</div>
+                  <div class="mt-0.5 text-xs text-slate-500">Conducta que expone a la persona.</div>
+                </div>
+              </div>
+            </div>
+          </label>
+          <label class="tipo block cursor-pointer">
+            <input type="radio" name="tipo" value="FALLA_ADMINISTRATIVA" class="sr-only" />
+            <div class="opt-card">
+              <div class="flex items-start gap-3">
+                <span class="text-xl">🗂️</span>
+                <div>
+                  <div class="font-semibold text-slate-800">Falla administrativa</div>
+                  <div class="mt-0.5 text-xs text-slate-500">Falta de control, permiso o procedimiento.</div>
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-4">
+          <label class="mb-1 block text-xs font-medium text-slate-500" for="descripcion">Descripción detallada</label>
+          <textarea id="descripcion" rows="4" maxlength="2000" required
+                    placeholder="¿Qué viste? Lugar, actividad, persona o equipo involucrado y posible consecuencia…"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
+        </div>
+
+        <!-- Evidencias -->
+        <div class="mt-5 border-t border-slate-200 pt-5">
+          <div class="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-700">Evidencia fotográfica y de video</h3>
+              <p class="mt-1 text-xs text-slate-400">Puedes tomar la foto o grabar el video en el momento, o elegir un archivo de la galería. Las fotos se comprimen antes de subirse.</p>
+            </div>
+            <span id="evidenciaContador" class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">0 archivos</span>
+          </div>
+
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">📷 Fotografías</div>
+              <p class="mt-1 text-xs text-slate-500">Hasta 8 fotos · máximo 12 MB cada una.</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" id="btnFotoCamara" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Tomar foto</button>
+                <button type="button" id="btnFotoGaleria" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Galería</button>
+              </div>
+              <input id="inputFotoCamara" type="file" accept="image/*" capture="environment" class="hidden" />
+              <input id="inputFotoGaleria" type="file" accept="image/*" multiple class="hidden" />
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div class="flex items-center gap-2 text-sm font-semibold text-slate-700">🎥 Video</div>
+              <p class="mt-1 text-xs text-slate-500">Hasta 3 videos · máximo 80 MB cada uno.</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button type="button" id="btnVideoCamara" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-semibold text-white hover:bg-teal-700">Grabar video</button>
+                <button type="button" id="btnVideoGaleria" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Galería</button>
+              </div>
+              <input id="inputVideoCamara" type="file" accept="video/*" capture="environment" class="hidden" />
+              <input id="inputVideoGaleria" type="file" accept="video/*" multiple class="hidden" />
+            </div>
+          </div>
+
+          <div id="evidenciaEstado" class="mt-2 hidden rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600"></div>
+          <div id="evidenciaLista" class="mt-3 grid gap-3 sm:grid-cols-2"></div>
+        </div>
+      </section>
+
+      <!-- 3. Control y clasificación -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">3</span>
+          Control y clasificación del riesgo
+        </h2>
+
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <p class="mb-2 text-xs font-medium text-slate-500">¿El riesgo se ha controlado?</p>
+            <div id="controladoGroup" class="grid grid-cols-2 gap-2">
+              <button type="button" data-controlado="SI" class="seg" aria-pressed="false">Sí</button>
+              <button type="button" data-controlado="NO" class="seg" aria-pressed="false">No</button>
+            </div>
+            <p id="controladoHint" class="mt-2 text-xs text-slate-400">Si no está controlado, registra la acción inmediata.</p>
+          </div>
+
+          <div>
+            <p class="mb-2 text-xs font-medium text-slate-500">Clasificación del riesgo</p>
+            <div id="clasificacionGroup" class="grid grid-cols-2 gap-2">
+              <button type="button" data-clasificacion="AMARILLO" class="risk risk--amarillo" aria-pressed="false">
+                <span class="h-5 w-5 shrink-0 rounded border border-amber-400 bg-amber-300"></span>
+                <span>Amarillo</span>
+              </button>
+              <button type="button" data-clasificacion="ROJO" class="risk risk--rojo" aria-pressed="false">
+                <span class="h-5 w-5 shrink-0 rounded border border-red-500 bg-red-500"></span>
+                <span>Rojo</span>
+              </button>
+            </div>
+            <p id="riskHint" class="mt-2 text-xs text-slate-400">Si marcas rojo, evalúa como probable evento centinela.</p>
+          </div>
+        </div>
+
+        <div id="alertaRojo" class="mt-4 hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          <b>Riesgo rojo.</b> Documenta la contención inmediata y escala el caso para evaluación como probable evento centinela.
+        </div>
+      </section>
+
+      <!-- 4. Acciones -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">4</span>
+          Acciones a tomar
+        </h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="inmediatas">Inmediatas <span class="font-normal text-slate-400">(contención)</span></label>
+            <textarea id="inmediatas" rows="4" maxlength="1500" placeholder="Lo que se hizo o se hará de inmediato…"
+                      class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="definitivas">Definitivas <span class="font-normal text-slate-400">(acción de fondo)</span></label>
+            <textarea id="definitivas" rows="4" maxlength="1500" placeholder="Cambio, reparación, capacitación o control permanente…"
+                      class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
+          </div>
+          <div class="sm:col-span-2 sm:max-w-xs">
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="fechaCompromiso">Fecha compromiso</label>
+            <input id="fechaCompromiso" type="date" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" />
+            <p class="mt-1 text-xs text-slate-400">Obligatoria cuando registras acciones definitivas.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Firma y cierre administrativo -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
+          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">5</span>
+          Firma del emisor y cierre
+        </h2>
+
+        <div class="max-w-xl">
+          <div class="mb-1 flex items-center justify-between">
+            <label class="text-xs font-medium text-slate-500">Firma del emisor</label>
+            <button type="button" data-clear="emisor" class="text-xs text-slate-400 hover:text-slate-700">Limpiar</button>
+          </div>
+          <div class="relative">
+            <canvas id="firmaEmisor" class="h-36 w-full rounded-xl border-2 border-dashed border-slate-300 bg-white"></canvas>
+            <span id="phEmisor" class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-300">Firma aquí</span>
+          </div>
+          <p id="nombreEmisor" class="mt-1 text-xs text-slate-500">&nbsp;</p>
+        </div>
+
+        <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <b>Parte 5 · Cierre administrativo.</b> El responsable de las acciones correctivas, su firma y la verificación final se capturan únicamente desde el panel de reportes, por folio. Al enviar esta tarjeta quedará en estado <b>PENDIENTE</b>.
+        </div>
+
+        <div class="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+          <button id="btnGuardar" type="submit" class="rounded-xl bg-teal-600 py-3.5 font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60">Emitir tarjeta CAR</button>
+          <button id="btnPreview" type="button" class="rounded-xl border border-slate-300 bg-white px-5 py-3.5 font-semibold text-slate-700 hover:bg-slate-50">Vista previa</button>
+          <button id="btnLimpiar" type="button" class="rounded-xl border border-slate-300 bg-white px-5 py-3.5 font-semibold text-slate-500 hover:bg-slate-50">Limpiar</button>
+        </div>
+        <p class="mt-2 text-center text-xs text-slate-400">Los datos y las evidencias se guardan en la base del proyecto, no en este navegador.</p>
+      </section>
+    </form>
+
+    <section class="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
+      <h2 class="text-sm font-bold text-teal-900">¿Qué pasa después de emitir?</h2>
+      <ol class="mt-2 grid gap-2 text-sm text-teal-900/80 sm:grid-cols-3">
+        <li><b>1.</b> Se genera el folio y la tarjeta queda pendiente.</li>
+        <li><b>2.</b> El administrador revisa la evidencia en el panel.</li>
+        <li><b>3.</b> Captura la parte 5 y cierra el hallazgo.</li>
+      </ol>
+    </section>
+
+    <footer class="mt-6 text-center text-xs text-slate-400">
+      CAR · Tarjeta de control y administración de riesgos · Kogn1v1s
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+    const TIPOS = [
+      { id: "ACTO_SEGURO", label: "Acto seguro", badge: "bg-emerald-100 text-emerald-700" },
+      { id: "CONDICION_INSEGURA", label: "Condición insegura", badge: "bg-amber-100 text-amber-800" },
+      { id: "ACTO_INSEGURO", label: "Acto inseguro", badge: "bg-red-100 text-red-700" },
+      { id: "FALLA_ADMINISTRATIVA", label: "Falla administrativa", badge: "bg-slate-200 text-slate-700" },
+    ];
+    const TIPO_MAP = Object.fromEntries(TIPOS.map(t => [t.id, t]));
+
+    let EMPLEADO = null;
+    let EVIDENCIAS = [];
+    let SUBIENDO = 0;
+    let controlado = "";
+    let clasificacion = "";
+    let firmaEmisor = "";
+    let tarjetaPreview = null;
+    let ultimaEmitida = null;
+
+    $("fechaHoy").textContent = new Date().toLocaleDateString("es-MX", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
+    $("fecha").value = hoyISO();
+
+    function fmtFecha(iso) {
+      if (!iso) return "—";
+      const d = new Date(String(iso).slice(0, 10) + "T12:00:00");
+      return Number.isNaN(d.getTime()) ? esc(iso) : d.toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
+    }
+
+    // ---------- Segmentos ----------
+    function pintarSegmentos() {
+      document.querySelectorAll("[data-controlado]").forEach((b) => {
+        const on = b.dataset.controlado === controlado;
+        b.classList.toggle("seg--on", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+      document.querySelectorAll("[data-clasificacion]").forEach((b) => {
+        const on = b.dataset.clasificacion === clasificacion;
+        b.classList.toggle("risk--on", on);
+        b.setAttribute("aria-pressed", String(on));
+      });
+      $("controladoHint").textContent = controlado === "NO"
+        ? "Riesgo no controlado: registra la acción inmediata."
+        : "Si no está controlado, registra la acción inmediata.";
+      $("riskHint").textContent = clasificacion === "ROJO"
+        ? "Riesgo rojo: evalúa como probable evento centinela."
+        : "Si marcas rojo, evalúa como probable evento centinela.";
+      $("riskHint").className = clasificacion === "ROJO"
+        ? "mt-2 text-xs font-semibold text-red-600"
+        : "mt-2 text-xs text-slate-400";
+      $("alertaRojo").classList.toggle("hidden", clasificacion !== "ROJO");
+    }
+
+    document.querySelectorAll("[data-controlado]").forEach((b) => {
+      b.addEventListener("click", () => { controlado = b.dataset.controlado; pintarSegmentos(); });
+    });
+    document.querySelectorAll("[data-clasificacion]").forEach((b) => {
+      b.addEventListener("click", () => { clasificacion = b.dataset.clasificacion; pintarSegmentos(); });
+    });
+
+    // ---------- Firma ----------
+    function initPad(canvas, setter) {
+      const ctx = canvas.getContext("2d");
+      const ph = canvas.parentElement.querySelector("span");
+      let drawing = false, last = null, ink = false;
+
+      function resize() {
+        const r = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(r.width * dpr));
+        canvas.height = Math.max(1, Math.round(r.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, r.width, r.height);
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ink = false;
+        setter("");
+        if (ph) ph.style.display = "";
+      }
+
+      function pos(ev) {
+        const r = canvas.getBoundingClientRect();
+        return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+      }
+
+      canvas.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        drawing = true;
+        ink = true;
+        if (ph) ph.style.display = "none";
+        try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
+        last = pos(ev);
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#0f172a";
+        ctx.fill();
+      });
+
+      canvas.addEventListener("pointermove", (ev) => {
+        if (!drawing) return;
+        ev.preventDefault();
+        const p = pos(ev);
+        ctx.beginPath();
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        last = p;
+      });
+
+      const end = (ev) => {
+        if (!drawing) return;
+        drawing = false;
+        try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+        if (ink) setter(canvas.toDataURL("image/png"));
+      };
+      canvas.addEventListener("pointerup", end);
+      canvas.addEventListener("pointercancel", end);
+      canvas.addEventListener("pointerleave", end);
+
+      canvas._resize = resize;
+      canvas._clear = resize;
+      resize();
+    }
+
+    initPad($("firmaEmisor"), (v) => { firmaEmisor = v; });
+
+    window.addEventListener("resize", () => {
+      if (firmaEmisor) return;
+      $("firmaEmisor")?._resize?.();
+    });
+
+    document.querySelectorAll("[data-clear]").forEach((btn) => {
+      btn.addEventListener("click", () => { $("firmaEmisor")._clear(); });
+    });
+
+    $("empSearch").addEventListener("input", () => {
+      clearTimeout(window.__empTimer);
+      window.__empTimer = setTimeout(buscarEmpleados, 260);
+    });
+    $("empResults").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-emp-id]");
+      if (!btn) return;
+      const emp = window.__EMP_MAP?.get(Number(btn.dataset.empId));
+      if (emp) seleccionarEmpleado(emp);
+    });
+    $("empChange").addEventListener("click", () => {
+      EMPLEADO = null;
+      $("empSelected").classList.add("hidden");
+      $("empSearchWrap").classList.remove("hidden");
+      $("empSearch").value = "";
+      $("empResults").innerHTML = "";
+      $("nombreEmisor").textContent = "\u00a0";
+      $("empSearch").focus();
+    });
+
+    async function buscarEmpleados() {
+      const q = $("empSearch").value.trim();
+      if (q.length < 2) { $("empResults").innerHTML = ""; return; }
+      $("empFuente").classList.add("hidden");
+      try {
+        const rows = await api("/car/empleados?q=" + encodeURIComponent(q));
+        window.__EMP_MAP = new Map();
+        if (!rows.length) {
+          $("empResults").innerHTML = '<div class="px-3 py-3 text-sm text-slate-500">Sin coincidencias. Revisa el nombre o la base de Fatiga.</div>';
+          return;
+        }
+        if (rows.some(r => r.fuente === "local")) {
+          $("empFuente").textContent = "Directorio local de ejemplo: la base de Fatiga no está disponible en este equipo. En producción se usa la tabla real de usuarios.";
+          $("empFuente").classList.remove("hidden");
+        }
+        $("empResults").innerHTML = rows.map((e) => {
+          window.__EMP_MAP.set(e.id_usuario, e);
+          const meta = [e.num_empleado ? `No. ${e.num_empleado}` : null, e.departamento, e.puesto].filter(Boolean).join(" · ");
+          const foto = e.foto_url
+            ? `<img src="${esc(e.foto_url)}" class="h-9 w-9 rounded-full object-cover" alt="">`
+            : `<div class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-500">${esc((e.nombre_completo || "?").slice(0, 1))}</div>`;
+          return `<button type="button" data-emp-id="${e.id_usuario}" class="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-slate-50">
+            <span class="shrink-0">${foto}</span>
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-medium text-slate-800">${esc(e.nombre_completo)}</span>
+              <span class="block truncate text-xs text-slate-500">${esc(meta)}</span>
+            </span>
+          </button>`;
+        }).join("");
+      } catch (e) {
+        $("empResults").innerHTML = `<div class="px-3 py-3 text-sm text-red-600">${esc(e.message)}</div>`;
+      }
+    }
+
+    function seleccionarEmpleado(e) {
+      EMPLEADO = e;
+      $("empNombre").textContent = e.nombre_completo;
+      $("empMeta").textContent = [e.num_empleado ? `No. ${e.num_empleado}` : null, e.departamento, e.puesto].filter(Boolean).join(" · ");
+      const foto = $("empFoto");
+      if (e.foto_url) {
+        foto.src = e.foto_url;
+        foto.classList.remove("hidden");
+      } else {
+        foto.classList.add("hidden");
+        foto.removeAttribute("src");
+      }
+      $("empSelected").classList.remove("hidden");
+      $("empSearchWrap").classList.add("hidden");
+      $("empResults").innerHTML = "";
+      $("nombreEmisor").textContent = e.nombre_completo;
+
+      // Si el departamento del trabajador existe en el catálogo, se preselecciona.
+      $("area").value = "";
+      const dep = (e.departamento || "").trim().toLowerCase();
+      const opt = [...$("area").options].find(o => (o.value || "").trim().toLowerCase() === dep);
+      if (opt) $("area").value = opt.value;
+    }
+
+    // ---------- Catálogo de áreas ----------
+    function llenarAreas(areas) {
+      const sel = $("area");
+      if (!areas || !areas.length) {
+        sel.innerHTML = '<option value="">Sin áreas registradas en el panel</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">Selecciona el área / departamento</option>' +
+        areas.map(a => `<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
+    }
+
+    async function cargarAreas() {
+      try {
+        const c = await api("/car/catalogos");
+        llenarAreas(c.areas || []);
+      } catch (e) {
+        llenarAreas([]);
+        toast("No se pudieron cargar las áreas: " + e.message, "error");
+      }
+    }
+
+    // ---------- Evidencias ----------
+    $("btnFotoCamara").addEventListener("click", () => $("inputFotoCamara").click());
+    $("btnFotoGaleria").addEventListener("click", () => $("inputFotoGaleria").click());
+    $("btnVideoCamara").addEventListener("click", () => $("inputVideoCamara").click());
+    $("btnVideoGaleria").addEventListener("click", () => $("inputVideoGaleria").click());
+
+    $("inputFotoCamara").addEventListener("change", (e) => procesarArchivos(e.target.files, "FOTO", true));
+    $("inputFotoGaleria").addEventListener("change", (e) => procesarArchivos(e.target.files, "FOTO", false));
+    $("inputVideoCamara").addEventListener("change", (e) => procesarArchivos(e.target.files, "VIDEO", true));
+    $("inputVideoGaleria").addEventListener("change", (e) => procesarArchivos(e.target.files, "VIDEO", false));
+
+    function tamanoLegible(bytes) {
+      if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
+    function contarTipo(tipo) {
+      return EVIDENCIAS.filter(e => e.tipo === tipo).length;
+    }
+
+    function comprimirImagen(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const max = 1600;
+          const escala = Math.min(1, max / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(img.width * escala));
+          c.height = Math.max(1, Math.round(img.height * escala));
+          const ctx = c.getContext("2d");
+          ctx.drawImage(img, 0, 0, c.width, c.height);
+          const dataUrl = c.toDataURL("image/jpeg", 0.82);
+          URL.revokeObjectURL(url);
+          fetch(dataUrl).then(r => r.blob()).then(blob => {
+            const nombre = (file.name || "foto.jpg").replace(/\.[^.]+$/, "") + ".jpg";
+            resolve({ blob, dataUrl, nombre });
+          }).catch(reject);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("No se pudo leer la imagen.")); };
+        img.src = url;
+      });
+    }
+
+    async function procesarArchivos(files, tipo, esCamara) {
+      const lista = Array.from(files || []);
+      if (!lista.length) return;
+      const max = tipo === "FOTO" ? 8 : 3;
+      if (contarTipo(tipo) + lista.length > max) {
+        toast(`Máximo ${max} ${tipo === "FOTO" ? "fotos" : "videos"} por tarjeta.`, "error");
+        return;
+      }
+
+      for (const file of lista) {
+        try {
+          if (tipo === "FOTO" && file.size > 12 * 1024 * 1024) {
+            toast(`La foto ${file.name} supera 12 MB.`, "error");
+            continue;
+          }
+          if (tipo === "VIDEO" && file.size > 80 * 1024 * 1024) {
+            toast(`El video ${file.name} supera 80 MB.`, "error");
+            continue;
+          }
+
+          SUBIENDO += 1;
+          actualizarEstadoEvidencias();
+          let archivo = file;
+          let preview = "";
+          if (tipo === "FOTO") {
+            const comprimida = await comprimirImagen(file);
+            archivo = new File([comprimida.blob], comprimida.nombre, { type: "image/jpeg" });
+            preview = comprimida.dataUrl;
+          } else {
+            preview = URL.createObjectURL(file);
+          }
+
+          const fd = new FormData();
+          fd.append("tipo", tipo);
+          fd.append("archivo", archivo, archivo.name || (tipo === "FOTO" ? "foto.jpg" : "video.mp4"));
+          const res = await fetch("api/car/evidencias", { method: "POST", body: fd });
+          let data = null;
+          try { data = await res.json(); } catch (_) {}
+          if (!res.ok) throw new Error((data && data.detail) || `Error ${res.status}`);
+          EVIDENCIAS.push({ ...data, preview });
+        } catch (e) {
+          toast("No se pudo subir la evidencia: " + e.message, "error");
+        } finally {
+          SUBIENDO = Math.max(0, SUBIENDO - 1);
+          actualizarEstadoEvidencias();
+          renderEvidencias();
+        }
+      }
+      $("inputFotoCamara").value = "";
+      $("inputFotoGaleria").value = "";
+      $("inputVideoCamara").value = "";
+      $("inputVideoGaleria").value = "";
+      if (esCamara) toast("Evidencia lista.", "ok");
+    }
+
+    function actualizarEstadoEvidencias() {
+      const total = EVIDENCIAS.length;
+      $("evidenciaContador").textContent = `${total} ${total === 1 ? "archivo" : "archivos"}`;
+      const estado = $("evidenciaEstado");
+      if (SUBIENDO > 0) {
+        estado.textContent = `Subiendo ${SUBIENDO} ${SUBIENDO === 1 ? "archivo" : "archivos"}…`;
+        estado.classList.remove("hidden");
+      } else {
+        estado.classList.add("hidden");
+      }
+      $("btnGuardar").disabled = SUBIENDO > 0;
+    }
+
+    function renderEvidencias() {
+      if (!EVIDENCIAS.length) {
+        $("evidenciaLista").innerHTML = "";
+        return;
+      }
+      $("evidenciaLista").innerHTML = EVIDENCIAS.map((e, i) => `
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          ${e.tipo === "FOTO"
+            ? `<img src="${e.preview}" alt="${esc(e.nombre)}" class="h-32 w-full object-cover">`
+            : `<video src="${e.preview}" controls preload="metadata" class="h-32 w-full bg-slate-900 object-contain"></video>`}
+          <div class="flex items-center justify-between gap-2 p-2">
+            <div class="min-w-0">
+              <div class="truncate text-xs font-medium text-slate-700">${esc(e.nombre)}</div>
+              <div class="text-[11px] text-slate-400">${e.tipo === "FOTO" ? "Foto" : "Video"} · ${tamanoLegible(e.tamano || 0)}</div>
+            </div>
+            <button type="button" data-quitar="${i}" class="shrink-0 rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">Quitar</button>
+          </div>
+        </div>`).join("");
+    }
+
+    $("evidenciaLista").addEventListener("click", async (ev) => {
+      const btn = ev.target.closest("[data-quitar]");
+      if (!btn) return;
+      const idx = Number(btn.dataset.quitar);
+      const evidencia = EVIDENCIAS[idx];
+      if (!evidencia) return;
+      try {
+        if (evidencia.id_evidencia) {
+          await fetch("api/car/evidencias/" + evidencia.id_evidencia, { method: "DELETE" });
+        }
+        if (evidencia.tipo === "VIDEO" && evidencia.preview) URL.revokeObjectURL(evidencia.preview);
+        EVIDENCIAS.splice(idx, 1);
+        actualizarEstadoEvidencias();
+        renderEvidencias();
+      } catch (e) {
+        toast("No se pudo quitar la evidencia: " + e.message, "error");
+      }
+    });
+
+    // ---------- Datos del formulario ----------
+    function leerFormulario() {
+      const tipo = document.querySelector('input[name="tipo"]:checked')?.value || "";
+      return {
+        fecha: $("fecha").value,
+        id_usuario: EMPLEADO?.id_usuario || 0,
+        observador: EMPLEADO?.nombre_completo || "",
+        area: $("area").value,
+        tipo,
+        descripcion: $("descripcion").value.trim(),
+        controlado,
+        clasificacion,
+        acciones_inmediatas: $("inmediatas").value.trim(),
+        acciones_definitivas: $("definitivas").value.trim(),
+        fecha_compromiso: $("fechaCompromiso").value,
+        firma_emisor: firmaEmisor,
+        evidencias: EVIDENCIAS.map(e => ({ ...e })),
+      };
+    }
+
+    function validar(r) {
+      const falta = (msg, el) => {
+        toast(msg, "error");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus?.();
+        return false;
+      };
+      if (!EMPLEADO) return falta("Selecciona al observador de la lista de personal.", $("empSearch"));
+      if (!r.area) return falta("Selecciona el área / departamento del observador.", $("area"));
+      if (!r.fecha) return falta("Selecciona la fecha de emisión.", $("fecha"));
+      if (!r.tipo) return falta("Selecciona el tipo de observación o riesgo.", $("tipoGroup"));
+      if (!r.descripcion) return falta("Describe detalladamente la observación o el riesgo.", $("descripcion"));
+      if (!r.controlado) return falta("Indica si el riesgo se ha controlado.", $("controladoGroup"));
+      if (!r.clasificacion) return falta("Selecciona la clasificación del riesgo.", $("clasificacionGroup"));
+      if (r.controlado === "NO" && !r.acciones_inmediatas) return falta("Registra la acción inmediata para el riesgo no controlado.", $("inmediatas"));
+      if (!r.acciones_inmediatas && !r.acciones_definitivas) return falta("Registra al menos una acción inmediata o definitiva.", $("inmediatas"));
+      if (r.acciones_definitivas && !r.fecha_compromiso) return falta("Selecciona la fecha compromiso de las acciones definitivas.", $("fechaCompromiso"));
+      if (r.fecha_compromiso && r.fecha && r.fecha_compromiso < r.fecha) return falta("La fecha compromiso no puede ser anterior a la fecha de emisión.", $("fechaCompromiso"));
+      if (!r.firma_emisor) return falta("Falta la firma del emisor.", $("firmaEmisor"));
+      if (SUBIENDO > 0) return falta("Espera a que terminen de subir las evidencias.", $("evidenciaLista"));
+      return true;
+    }
+
+    // ---------- Enviar ----------
+    $("form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const r = leerFormulario();
+      if (!validar(r)) return;
+      const btn = $("btnGuardar");
+      btn.disabled = true;
+      btn.textContent = "Emitiendo…";
+      try {
+        const res = await api("/car", {
+          method: "POST",
+          body: {
+            fecha: r.fecha,
+            id_usuario: r.id_usuario,
+            area: r.area,
+            tipo: r.tipo,
+            descripcion: r.descripcion,
+            controlado: r.controlado,
+            clasificacion: r.clasificacion,
+            acciones_inmediatas: r.acciones_inmediatas || null,
+            acciones_definitivas: r.acciones_definitivas || null,
+            fecha_compromiso: r.fecha_compromiso || null,
+            firma_emisor: r.firma_emisor,
+            evidencias: r.evidencias.map(e => e.id_evidencia).filter(Boolean),
+          },
+        });
+        ultimaEmitida = { ...r, ...res, evidencias: r.evidencias };
+        mostrarExito(ultimaEmitida);
+        resetFormulario();
+      } catch (e) {
+        toast(e.message, "error");
+        btn.disabled = false;
+        btn.textContent = "Emitir tarjeta CAR";
+      }
+    });
+
+    function mostrarExito(r) {
+      $("successBody").innerHTML = `
+        <div class="rounded-xl bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
+          <div class="flex items-center justify-between gap-3">
+            <span class="font-bold text-slate-800">${esc(r.folio)}</span>
+            <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Pendiente de cierre</span>
+          </div>
+          <div class="mt-1">${esc(TIPO_MAP[r.tipo]?.label || "—")}</div>
+          <div class="text-xs text-slate-400">${esc(r.observador)} · ${esc(r.area)} · ${fmtFecha(r.fecha)}</div>
+          <div class="mt-1 text-xs text-slate-400">${(r.evidencias || []).length} ${(r.evidencias || []).length === 1 ? "evidencia adjunta" : "evidencias adjuntas"}</div>
+        </div>`;
+      $("success").classList.remove("hidden");
+    }
+
+    $("btnNueva").addEventListener("click", () => {
+      $("success").classList.add("hidden");
+      $("empSearch").focus();
+    });
+    $("btnVerUltima").addEventListener("click", () => {
+      $("success").classList.add("hidden");
+      if (ultimaEmitida) verPreview(ultimaEmitida);
+    });
+
+    function resetFormulario() {
+      EMPLEADO = null;
+      EVIDENCIAS = [];
+      controlado = "";
+      clasificacion = "";
+      firmaEmisor = "";
+      $("form").reset();
+      $("fecha").value = hoyISO();
+      $("empSelected").classList.add("hidden");
+      $("empSearchWrap").classList.remove("hidden");
+      $("empSearch").value = "";
+      $("empResults").innerHTML = "";
+      $("empFuente").classList.add("hidden");
+      $("firmaEmisor")._clear();
+      $("nombreEmisor").textContent = "\u00a0";
+      $("evidenciaLista").innerHTML = "";
+      actualizarEstadoEvidencias();
+      pintarSegmentos();
+      const btn = $("btnGuardar");
+      btn.disabled = false;
+      btn.textContent = "Emitir tarjeta CAR";
+    }
+
+    $("btnLimpiar").addEventListener("click", () => {
+      if (!confirm("¿Limpiar la tarjeta? Se perderán los datos que no hayas enviado.")) return;
+      resetFormulario();
+      toast("Formulario limpio.", "ok");
+    });
+
+    // ---------- Vista previa / impresión ----------
+    function sumarDias(dias) {
+      const d = new Date();
+      d.setDate(d.getDate() + dias);
+      const p = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Monterrey", year: "numeric", month: "2-digit", day: "2-digit",
+      }).formatToParts(d);
+      const o = Object.fromEntries(p.map(x => [x.type, x.value]));
+      return `${o.year}-${o.month}-${o.day}`;
+    }
+
+    function firmaDemo(variante) {
+      const c = document.createElement("canvas");
+      c.width = 420; c.height = 120;
+      const ctx = c.getContext("2d");
+      ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(20, 82);
+      ctx.bezierCurveTo(70, 20, 100, 100, 150, 55);
+      ctx.bezierCurveTo(190, 20, 220, 95, 270, 50);
+      ctx.stroke();
+      if (variante === 2) {
+        ctx.beginPath();
+        ctx.moveTo(30, 45);
+        ctx.bezierCurveTo(90, 92, 140, 22, 200, 70);
+        ctx.stroke();
+      }
+      return c.toDataURL("image/png");
+    }
+
+    function fotoDemo(texto) {
+      const c = document.createElement("canvas");
+      c.width = 640; c.height = 420;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#e2e8f0"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.fillStyle = "#0f766e"; ctx.fillRect(0, 0, c.width, 54);
+      ctx.fillStyle = "#ffffff"; ctx.font = "bold 22px Arial"; ctx.fillText("EVIDENCIA DE EJEMPLO", 22, 36);
+      ctx.fillStyle = "#334155"; ctx.font = "20px Arial";
+      ctx.fillText(texto, 22, 120);
+      ctx.strokeStyle = "#64748b"; ctx.lineWidth = 4; ctx.strokeRect(22, 160, 596, 220);
+      ctx.fillStyle = "#94a3b8"; ctx.font = "18px Arial"; ctx.fillText("Imagen simulada para revisar el formato", 22, 405);
+      return c.toDataURL("image/jpeg", 0.8);
+    }
+
+    function ejemplo() {
+      return {
+        folio: "CAR-2026-001",
+        fecha: hoyISO(),
+        observador: "Jesús Coss",
+        area: "TI",
+        tipo: "ACTO_INSEGURO",
+        descripcion: "Se observó a un operador ingresando a la zona de carga sin chaleco reflectante mientras maniobraba un montacargas. El cruce no tiene señalización visible y la visibilidad es baja por el almacenamiento de tarimas.",
+        controlado: "NO",
+        clasificacion: "ROJO",
+        acciones_inmediatas: "Se detuvo la maniobra, se retiró al operador de la zona y se le proporcionó chaleco reflectante.",
+        acciones_definitivas: "Reforzar la inspección de EPP al inicio del turno y colocar señalización y espejos en el cruce de montacargas.",
+        fecha_compromiso: sumarDias(10),
+        firma_emisor: firmaDemo(2),
+        evidencias: [
+          { tipo: "FOTO", nombre: "cruce-montacargas.jpg", preview: fotoDemo("Cruce de montacargas sin señalización") },
+          { tipo: "FOTO", nombre: "zona-carga.jpg", preview: fotoDemo("Zona de carga y tarimas acumuladas") },
+          { tipo: "VIDEO", nombre: "maniobra-montacargas.mp4", preview: "" },
+        ],
+        estado: "PENDIENTE",
+      };
+    }
+
+    $("btnEjemplo").addEventListener("click", () => verPreview(ejemplo()));
+
+    $("btnPreview").addEventListener("click", () => verPreview(leerFormulario()));
+
+    function verPreview(r) {
+      tarjetaPreview = r;
+      $("previewPaper").innerHTML = buildDoc(r);
+      $("preview").classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+
+    function cerrarPreview() {
+      $("preview").classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+
+    $("btnCerrarPreview").addEventListener("click", cerrarPreview);
+    $("preview").addEventListener("click", (ev) => { if (ev.target === $("preview")) cerrarPreview(); });
+    $("btnImprimirPreview").addEventListener("click", () => {
+      if (tarjetaPreview) imprimir(tarjetaPreview);
+    });
+
+    function imprimir(r) {
+      $("printDoc").innerHTML = buildDoc(r);
+      document.body.classList.add("printing");
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove("printing");
+      }, 80);
+    }
+
+    // ---------- Documento ----------
+    function buildDoc(r) {
+      const checkTipo = TIPOS.map(t => `<span><span class="box">${r.tipo === t.id ? "X" : ""}</span>${t.label}</span>`).join("");
+      const rojo = r.clasificacion === "ROJO";
+      const evs = r.evidencias || r.lista_evidencias || [];
+      const fotos = evs.filter(e => e.tipo === "FOTO");
+      const videos = evs.filter(e => e.tipo === "VIDEO");
+      const evidenciaHtml = `
+        <div class="band">Evidencia fotográfica y de video</div>
+        <div style="border:1px solid #111827;border-top:0;padding:6px;">
+          ${fotos.length
+            ? `<div class="evidencias">${fotos.map(e => `<img src="${e.preview || e.url}" alt="${esc(e.nombre || "Evidencia")}">`).join("")}</div>`
+            : '<div style="font-size:9px;color:#6b7280;">Sin fotografías adjuntas.</div>'}
+          ${videos.length
+            ? `<div style="margin-top:5px;">${videos.map(e => `<span class="video-chip">🎥 ${esc(e.nombre || "Video")}</span>`).join("")}</div>`
+            : ""}
+        </div>`;
+
+      return `
+        <div class="car-doc">
+          <div class="doc-head">
+            <img class="doc-logo" src="img/logo-autotech.png" alt="Autotech" />
+            <div class="doc-title">
+              <h1>TARJETA DE CONTROL Y ADMINISTRACIÓN DE RIESGOS</h1>
+              <p>CAR · ${esc(r.folio || "Folio se asigna al emitir")} · ${r.estado === "CERRADO" ? "CERRADA" : "PENDIENTE DE CIERRE"}</p>
+            </div>
+          </div>
+
+          <div class="band">Datos del observador / emisor</div>
+          <table>
+            <tr><td class="lbl">Nombre del observador</td><td class="val" colspan="3">${esc(r.observador || "—")}</td></tr>
+            <tr>
+              <td class="lbl">Área del observador</td><td class="val">${esc(r.area || "—")}</td>
+              <td class="lbl">Fecha de emisión</td><td class="val">${fmtFecha(r.fecha)}</td>
+            </tr>
+            <tr><td class="lbl">Folio de la tarjeta</td><td class="val" colspan="3">${esc(r.folio || "—")}</td></tr>
+          </table>
+
+          <div class="band">Observación o riesgo identificado</div>
+          <div style="border:1px solid #111827;border-top:0;padding:6px;">
+            <div class="checkrow">${checkTipo}</div>
+            <div style="margin-top:7px;font-size:8px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;">Descripción detallada</div>
+            <div class="prose">${esc(r.descripcion || "—")}</div>
+          </div>
+
+          ${evidenciaHtml}
+
+          <div style="text-align:center;font-size:7.5px;color:#0f766e;letter-spacing:1.2px;font-weight:700;margin:5px 0 3px;">EL USO DE ESTA TARJETA PUEDE SALVAR TU VIDA</div>
+
+          <div class="band">Control y clasificación del riesgo</div>
+          <table>
+            <tr>
+              <td class="lbl">¿El riesgo se ha controlado?</td>
+              <td><span class="box">${r.controlado === "SI" ? "X" : ""}</span> Sí &nbsp;&nbsp;&nbsp; <span class="box">${r.controlado === "NO" ? "X" : ""}</span> No</td>
+              <td class="lbl">Clasificación</td>
+              <td>
+                <span class="box" style="border-color:#d97706">${r.clasificacion === "AMARILLO" ? "X" : ""}</span> Amarillo
+                &nbsp;&nbsp;&nbsp;
+                <span class="box" style="border-color:#dc2626">${rojo ? "X" : ""}</span> Rojo
+              </td>
+            </tr>
+          </table>
+          ${rojo ? '<div class="red-note">Si marca rojo, evalúe como probable evento centinela.</div>' : ''}
+
+          <div class="band">Acciones a tomar</div>
+          <table>
+            <tr>
+              <td class="lbl">Inmediatas</td>
+              <td class="prose">${esc(r.acciones_inmediatas || "—")}</td>
+              <td class="lbl" style="width:18%">Fecha compromiso</td>
+              <td class="val" style="width:18%">${fmtFecha(r.fecha_compromiso)}</td>
+            </tr>
+            <tr><td class="lbl">Definitivas</td><td class="prose" colspan="3">${esc(r.acciones_definitivas || "—")}</td></tr>
+          </table>
+
+          <div class="band">Parte 5 · Datos del responsable de las acciones correctivas</div>
+          <table>
+            <tr>
+              <td class="lbl">Responsable</td><td class="val">${esc(r.responsable || "Pendiente de cierre administrativo")}</td>
+              <td class="lbl">Área del responsable</td><td class="val">${esc(r.area_responsable || "—")}</td>
+            </tr>
+            <tr>
+              <td class="lbl">Firma del emisor</td>
+              <td class="sig">${r.firma_emisor ? `<img src="${r.firma_emisor}" alt="Firma del emisor">` : ""}</td>
+              <td class="lbl">Firma del responsable</td>
+              <td class="sig">${r.firma_responsable ? `<img src="${r.firma_responsable}" alt="Firma del responsable">` : ""}</td>
+            </tr>
+          </table>
+          <div style="border:1px solid #111827;border-top:0;padding:5px 6px;font-size:8.5px;">
+            <span class="box">${r.revision ? "X" : ""}</span> Revisé y constaté la implementación de las acciones correctivas.
+          </div>
+
+          <div class="watermark">CUIDARNOS ES NUESTRA RESPONSABILIDAD</div>
+        </div>`;
+    }
+
+    // ---------- Arranque ----------
+    pintarSegmentos();
+    actualizarEstadoEvidencias();
+    cargarAreas();
+  </script>
+</body>
+</html>

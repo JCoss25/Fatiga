@@ -157,9 +157,16 @@ Consola → **App Runner** → *Create service* → **Container registry (ECR)**
 | `SMTP_FROM_NAME` | `Kogn1v1s - Comercial` |
 | `CORREO_SIMULADO` | `0` |
 | `APP_URL` | `https://<tu-servicio>.mx-central-1.awsapprunner.com` |
+| `CAR_MAX_FOTO_MB` | `12` |
+| `CAR_MAX_VIDEO_MB` | `80` |
 
 > No definas `COT_DATABASE_URL` en AWS: el módulo Comercial usa la misma base
 > MySQL/RDS (`kogn1v1s`) y crea solo tablas `cot_*`.
+>
+> Tampoco definas `CAR_DATABASE_URL` en AWS: CAR usa la misma base
+> `kogn1v1s` y crea solo tablas `car_*`. Las evidencias necesitan un volumen
+> persistente (EC2 + EBS) o S3; el sistema de archivos del contenedor no es
+> persistente.
 >
 > Puedes poner las claves y la contraseña de Gmail también en Secrets Manager.
 
@@ -183,6 +190,7 @@ Las tablas se crean ejecutando las migraciones. Opciones:
 
 ```bash
 python db/migrate.py              # fatiga / SST
+python db/migrate_car.py          # tablas car_* del módulo CAR
 python db/migrate_comercial.py    # tablas cot_* del módulo Comercial
 ```
 
@@ -218,6 +226,38 @@ sudo docker run -d --restart unless-stopped -p 80:8000 \
   --env-file .env kogn1v1s-fatiga
 ```
 Abre el puerto 80 en el Security Group del EC2 y listo.
+
+### Actualización en el EC2 actual (`app.kogn1v1s.com/fatiga`)
+
+La app vive en `/opt/fatiga` y el contenedor se llama `fatiga`:
+
+```bash
+cd /opt/fatiga
+git pull --ff-only
+
+# Guarda la imagen actual por si hay que volver atrás.
+docker tag $(docker inspect -f '{{.Image}}' fatiga) kogn-fatiga:pre-car
+
+mkdir -p data/car_evidencias
+docker build -f deploy/Dockerfile -t kogn-fatiga:latest .
+docker run --rm --env-file .env kogn-fatiga:latest python db/migrate_car.py
+
+docker rm -f fatiga
+docker run -d --name fatiga --restart always -p 80:8000 \
+  --env-file .env \
+  -v /opt/fatiga/data/car_evidencias:/app/data/car_evidencias \
+  kogn-fatiga:latest
+
+curl -fsS http://127.0.0.1/api/ping
+```
+
+Queda disponible en:
+
+- `https://app.kogn1v1s.com/fatiga/car.html`
+- `https://app.kogn1v1s.com/fatiga/panel.html?tab=car`
+
+El volumen `data/car_evidencias` vive en el EBS del EC2. Si algún día se
+pasa a App Runner, ECS o varias instancias, mover las evidencias a S3.
 
 ---
 

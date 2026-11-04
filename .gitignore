@@ -19,3 +19,7 @@ manual/
 
 # Base local del modulo Comercial
 comercial_local.db
+
+# Base local y evidencias del modulo CAR
+car_local.db
+data/car_evidencias/

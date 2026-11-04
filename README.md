@@ -23,6 +23,12 @@ SQLite local para pruebas.
   resumen del día, filtros (fecha, semáforo, turno, departamento, búsqueda),
   detalle por pregunta, historial por trabajador, alerta de **patrón repetido**
   y exportación a CSV.
+- **CAR** (`/car.html`): **Tarjeta de control y administración de riesgos**.
+  El observador se busca en la misma tabla `usuarios` que alimenta Fatiga, el
+  área/departamento sale de un catálogo administrable, se adjuntan fotos o
+  videos (cámara o galería), se clasifica el riesgo y se firma la emisión. La
+  tarjeta queda **PENDIENTE**; solo el administrador completa la parte 5
+  (responsable, firma y verificación) desde el **panel de reportes → CAR**.
 - **Comercial** (`/comercial/`): solicitud de cotización de daños (Orden de
   Reparación TOT), aprobación con número de SB, comentarios, adjuntos,
   recordatorios cada 2 días, PDF e indicadores. Tiene dos accesos:
@@ -40,6 +46,42 @@ SQLite local para pruebas.
 - **Preguntas críticas ⚠** (1, 3, 8, 9 y 10): si alguna tiene **2 puntos**, el
   trabajador **no** debe hacer jornada extra **aunque el total sea verde**.
 - Patrón repetido: 2 o más días en amarillo/rojo en la última semana.
+
+## Módulo CAR (Tarjeta de control y administración de riesgos)
+
+Flujo:
+
+1. El observador busca su nombre en la misma tabla `usuarios` que usa Fatiga.
+2. Elige el **área / departamento** desde el catálogo CAR que administra el panel.
+3. Registra el tipo de riesgo, la descripción, las acciones y adjunta fotos o
+   videos tomados en el momento o elegidos de la galería.
+4. Firma la emisión. El folio se genera como `CAR-AAAA-###` y la tarjeta queda
+   en estado **PENDIENTE**.
+5. El **administrador** entra a `panel.html → CAR`, abre el folio, revisa la
+   evidencia y completa la **parte 5**: responsable, área, firma del responsable,
+   comentario y verificación. Al guardar, el hallazgo queda **CERRADO**.
+6. Los revisores pueden consultar todo, pero **no pueden cerrar**.
+
+Catálogos y datos:
+
+- `Panel → Catálogos → Áreas / departamentos CAR` controla el desplegable del
+  formulario. El catálogo de Seguridad sigue siendo independiente.
+- Base local: `CAR_DATABASE_URL=sqlite:///./car_local.db`. Se crea con
+  `python db/migrate_car.py`.
+- Producción: elimina `CAR_DATABASE_URL` del `.env` y ejecuta
+  `python db/migrate_car.py` para crear las tablas `car_*` en MySQL/RDS.
+- Las fotos y videos se guardan en `data/car_evidencias/` (local) y se sirven
+  solo con clave de reportes. Límites configurables:
+  `CAR_MAX_FOTO_MB` y `CAR_MAX_VIDEO_MB`.
+- Para AWS/App Runner, las evidencias deben migrarse a S3: el sistema de
+  archivos del contenedor es efímero. La base y las URLs ya están separadas
+  para hacer ese cambio sin tocar el formulario. En producción conviene usar
+  URLs firmadas de S3 en lugar de pasar la clave de reportes en la URL de la
+  evidencia (la vista local del panel lo hace así por simplicidad).
+- Si la base de Fatiga no responde en local, el buscador usa un directorio de
+  ejemplo y lo avisa en pantalla. En producción se usa la tabla real `usuarios`.
+  Si quieres usar la tabla real aun con las tarjetas en SQLite local, agrega
+  `CAR_EMPLEADOS_RDS=1` al `.env` (requiere acceso a RDS).
 
 ## Módulo Comercial (Cotización de daños)
 
@@ -120,6 +162,11 @@ app-fatiga/
 │   ├── schemas.py      validación de datos
 │   ├── scoring.py      reglas de puntaje/semáforo/jornada extra
 │   ├── db.py           conexión MySQL/RDS + Secrets Manager
+│   ├── car/            módulo CAR (car_*)
+│   │   ├── router.py   API /api/car + evidencias
+│   │   ├── models.py   tarjetas, áreas y evidencias
+│   │   ├── schemas.py  validación Pydantic
+│   │   └── db.py       engine propio (SQLite local o MySQL/RDS)
 │   └── comercial/      módulo Comercial (cot_*)
 │       ├── router.py   API /api/comercial
 │       ├── models.py   solicitudes, comentarios, adjuntos, correos, catálogos
@@ -128,10 +175,15 @@ app-fatiga/
 │       ├── correo.py   SMTP Gmail + modo simulado
 │       └── db.py       engine propio (SQLite local o MySQL/RDS)
 ├── frontend/           interfaz (HTML + Tailwind + JS, sin build)
+│   ├── car.html        emisión de la tarjeta CAR
+│   ├── img/            logo del formato
 │   └── comercial/      portal, solicitante, aprobador y PDF
+├── data/car_evidencias/  fotos y videos subidos (local)
 ├── db/
 │   ├── schema.sql              tablas del test de fatiga/SST
 │   ├── migrate.py              aplica schema.sql
+│   ├── car_schema.sql          tablas car_* para MySQL
+│   ├── migrate_car.py          crea tablas CAR (SQLite o MySQL)
 │   ├── comercial_schema.sql    tablas cot_* para MySQL
 │   ├── migrate_comercial.py    crea tablas (SQLite o MySQL)
 │   └── reset_comercial.py      borra solicitudes/comentarios/adjuntos/correos
@@ -146,6 +198,15 @@ app-fatiga/
 - `fatiga_preguntas` — catálogo de las 10 preguntas.
 - `fatiga_tests` — encabezado de cada test (puntaje, semáforo, jornada extra…).
 - `fatiga_respuestas` — valor 0/1/2 por pregunta.
+
+Módulo CAR (prefijo `car_`):
+
+- `car_tarjetas` — encabezado de la tarjeta, partes 1 a 5, estado y cierre.
+- `car_areas` — catálogo de áreas/departamentos del observador.
+- `car_evidencias` — fotos y videos ligados a cada tarjeta.
+
+En local se crean en `car_local.db` (SQLite); en AWS, en `kogn1v1s` (MySQL).
+No se modifica ninguna tabla existente.
 
 Módulo Comercial (prefijo `cot_`):
 
@@ -199,6 +260,7 @@ docker compose up --build
 
 ```bash
 python db/migrate.py
+python db/migrate_car.py
 ```
 
 ### Módulo Comercial en local
@@ -257,6 +319,10 @@ imagen con `deploy/Dockerfile` y se publica; el contenedor escucha en el puerto
   contraseñas, mover secretos a Secrets Manager y cambiar `ADMIN_PASSWORD`.
 - Cambiar también `SOLICITANTE_PASSWORD` (`Soli.2026`) y `APROBADOR_PASSWORD`
   (`Apro.2026`) del módulo Comercial antes de publicarlo.
+- Las fotos y videos de CAR pueden contener información sensible. En producción
+  usa un bucket S3 privado, URLs firmadas y una política de retención.
+- El cierre de CAR usa el rol **admin** actual. Si se requiere un administrador
+  exclusivo de CAR, hay que agregar una clave/rol separado en `auth.py`.
 - Para Gmail usa una **contraseña de aplicación**, no la contraseña normal de la
   cuenta; guárdala en Secrets Manager y no la escribas en el repositorio.
 - `.env` no se sube al repo; `.server.pid` tampoco.

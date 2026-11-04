@@ -9,7 +9,12 @@
   <script src="common.js"></script>
   <script src="demo-data.js"></script>
   <script src="demo-mode.js"></script>
-  <style>body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }</style>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    /* Mantiene legible la pestaña activa aun con el cursor encima. */
+    #tabFatiga.text-white:hover, #tabSst.text-white:hover, #tabCar.text-white:hover,
+    #tabIndicadores.text-white:hover, #tabCatalogos.text-white:hover { color: #fff !important; }
+  </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-800">
 
@@ -38,6 +43,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <a href="kiosco.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Llenar test</a>
           <a href="sst.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Check list</a>
+          <a href="car.html" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">CAR</a>
           <button id="btnSalir" class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Salir</button>
         </div>
       </div>
@@ -50,6 +56,8 @@
                 class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Fatiga</button>
         <button id="tabSst" type="button"
                 class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Seguridad</button>
+        <button id="tabCar" type="button"
+                class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">CAR</button>
         <button id="tabIndicadores" type="button"
                 class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800">Indicadores</button>
         <button id="tabCatalogos" type="button"
@@ -216,6 +224,87 @@
         </div>
       </div><!-- /vistaSst -->
 
+      <!-- Vista CAR -->
+      <div id="vistaCar" class="hidden">
+        <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Desde</label>
+            <input id="fCarDesde" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Hasta</label>
+            <input id="fCarHasta" type="date" class="rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Estado</label>
+            <select id="fCarEstado" class="rounded-xl border border-slate-300 px-3 py-2">
+              <option value="">Todos</option>
+              <option value="PENDIENTE">Pendientes de cierre</option>
+              <option value="CERRADO">Cerrados</option>
+            </select>
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">Clasificación</label>
+            <select id="fCarClasificacion" class="rounded-xl border border-slate-300 px-3 py-2">
+              <option value="">Todas</option>
+              <option value="AMARILLO">Amarillo</option>
+              <option value="ROJO">Rojo</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-[200px]">
+            <label class="mb-1 block text-xs font-medium text-slate-500">Buscar</label>
+            <input id="fCarQ" placeholder="Folio, observador, área, responsable o descripción"
+                   class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+          </div>
+          <button id="fCarAplicar" class="rounded-xl bg-slate-800 px-5 py-2.5 font-medium text-white hover:bg-slate-900">Aplicar</button>
+          <button id="fCarCsv" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Exportar CSV</button>
+          <button id="fCarHoy" class="rounded-xl border border-slate-300 px-4 py-2.5 hover:bg-slate-50">Hoy</button>
+        </div>
+
+        <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-2xl border border-slate-200 bg-white p-4">
+            <div class="text-xs font-medium uppercase text-slate-400">Tarjetas</div>
+            <div id="carTotal" class="mt-1 text-3xl font-black">0</div>
+          </div>
+          <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div class="text-xs font-medium uppercase text-amber-600">Pendientes de cierre</div>
+            <div id="carPendientes" class="mt-1 text-3xl font-black text-amber-700">0</div>
+          </div>
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <div class="text-xs font-medium uppercase text-emerald-600">Cerradas</div>
+            <div id="carCerrados" class="mt-1 text-3xl font-black text-emerald-700">0</div>
+          </div>
+          <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+            <div class="text-xs font-medium uppercase text-red-600">Riesgo rojo</div>
+            <div id="carRojos" class="mt-1 text-3xl font-black text-red-700">0</div>
+          </div>
+        </div>
+
+        <div class="mb-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
+          <b>Cierre por folio.</b> El administrador abre cada tarjeta y completa la parte 5: responsable, área, firma y verificación. Los revisores solo pueden consultar.
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          <table class="w-full min-w-[980px] text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th class="px-4 py-3">Folio</th>
+                <th class="px-4 py-3">Fecha</th>
+                <th class="px-4 py-3">Observador</th>
+                <th class="px-4 py-3">Área</th>
+                <th class="px-4 py-3">Tipo</th>
+                <th class="px-4 py-3">Clasificación</th>
+                <th class="px-4 py-3 text-center">Evidencia</th>
+                <th class="px-4 py-3">Estado</th>
+                <th class="px-4 py-3">Cierre</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyCar" class="divide-y divide-slate-100"></tbody>
+          </table>
+          <div id="emptyCar" class="hidden px-4 py-12 text-center text-sm text-slate-400">Sin tarjetas CAR para los filtros seleccionados.</div>
+        </div>
+      </div><!-- /vistaCar -->
+
       <!-- Vista Indicadores -->
       <div id="vistaIndicadores" class="hidden">
         <div class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
@@ -288,8 +377,8 @@
       <!-- Vista Catálogos (solo administrador) -->
       <div id="vistaCatalogos" class="hidden">
         <div class="mb-5 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
-          <h2 class="text-sm font-bold text-indigo-900">Catálogos del check list REG-SST-25</h2>
-          <p class="mt-1 text-sm text-indigo-900/80">Lo que agregues aquí aparece en los desplegables de <b>Área</b> y <b>Auditor</b> del formulario de seguridad. Quitar un elemento no altera las auditorías ya guardadas.</p>
+          <h2 class="text-sm font-bold text-indigo-900">Catálogos de seguridad y CAR</h2>
+          <p class="mt-1 text-sm text-indigo-900/80">Los catálogos de <b>Seguridad</b> alimentan el check list REG-SST-25. El catálogo de <b>Áreas CAR</b> alimenta el desplegable del observador en la tarjeta de riesgos. Quitar un elemento no altera los registros ya guardados.</p>
         </div>
         <div class="grid gap-5 lg:grid-cols-2">
           <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-5">
@@ -312,6 +401,16 @@
             </form>
             <div id="catAreas" class="mt-4 divide-y divide-slate-100"></div>
           </div>
+          <div class="min-w-0 rounded-2xl border border-teal-200 bg-white p-5">
+            <h3 class="text-sm font-bold text-slate-700">Áreas / departamentos CAR</h3>
+            <p class="mb-3 text-xs text-slate-400">Opciones del desplegable <b>Área del observador</b> de la tarjeta de riesgos.</p>
+            <form id="formAreaCar" class="flex gap-2">
+              <input id="nuevaAreaCar" maxlength="120" placeholder="Nombre del área o departamento"
+                     class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2" />
+              <button class="rounded-xl bg-teal-600 px-4 py-2 font-semibold text-white hover:bg-teal-700">Agregar</button>
+            </form>
+            <div id="catAreasCar" class="mt-4 divide-y divide-slate-100"></div>
+          </div>
         </div>
       </div><!-- /vistaCatalogos -->
     </main>
@@ -319,7 +418,7 @@
 
   <!-- MODAL detalle -->
   <div id="modal" class="hidden fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4">
-    <div class="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+    <div id="modalCard" class="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
       <div class="flex items-center justify-between border-b border-slate-200 px-5 py-3">
         <h3 id="modalTitle" class="font-bold">Detalle del test</h3>
         <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-700">✕</button>
@@ -332,6 +431,9 @@
     let TESTS = [];
     let SST = [];
     let SST_LOADED = false;
+    let CAR = [];
+    let CAR_LOADED = false;
+    let CAR_FIRMA = "";
 
     function showPanel() {
       document.getElementById("login").classList.add("hidden");
@@ -344,11 +446,12 @@
       document.getElementById("fDesde").value = hoy;
       document.getElementById("fHasta").value = hoy;
       initSstDates();
+      initCarDates();
       initIndDates();
       setTab("fatiga");
       cargar();
       const tab = new URLSearchParams(location.search).get("tab");
-      if (["fatiga", "sst", "indicadores", "catalogos"].includes(tab)) setTab(tab);
+      if (["fatiga", "sst", "car", "indicadores", "catalogos"].includes(tab)) setTab(tab);
     }
 
     document.getElementById("btnLogin").addEventListener("click", async () => {
@@ -501,7 +604,11 @@
       } catch (e) { toast(e.message, "error"); }
     }
 
-    function cerrarModal() { document.getElementById("modal").classList.add("hidden"); }
+    function cerrarModal() {
+      document.getElementById("modal").classList.add("hidden");
+      const card = document.getElementById("modalCard");
+      if (card) card.className = "my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl";
+    }
     document.getElementById("modal").addEventListener("click", e => { if (e.target.id === "modal") cerrarModal(); });
 
     document.getElementById("fAplicar").addEventListener("click", cargar);
@@ -543,6 +650,7 @@
     const FAVICONS = {
       fatiga: "favicon-fatiga.svg",
       sst: "favicon-sst.svg",
+      car: "favicon-car.svg",
       indicadores: "favicon-panel.svg",
       catalogos: "favicon-catalogos.svg",
     };
@@ -555,11 +663,11 @@
     function setTab(t) {
       if (t === "catalogos" && getRole() !== "admin") return;
       setFavicon(FAVICONS[t]);
-      const vistas = { fatiga: "vistaFatiga", sst: "vistaSst", indicadores: "vistaIndicadores", catalogos: "vistaCatalogos" };
+      const vistas = { fatiga: "vistaFatiga", sst: "vistaSst", car: "vistaCar", indicadores: "vistaIndicadores", catalogos: "vistaCatalogos" };
       Object.entries(vistas).forEach(([k, id]) => {
         document.getElementById(id).classList.toggle("hidden", k !== t);
       });
-      const tabs = { fatiga: "tabFatiga", sst: "tabSst", indicadores: "tabIndicadores", catalogos: "tabCatalogos" };
+      const tabs = { fatiga: "tabFatiga", sst: "tabSst", car: "tabCar", indicadores: "tabIndicadores", catalogos: "tabCatalogos" };
       Object.entries(tabs).forEach(([k, id]) => {
         const el = document.getElementById(id);
         el.classList.toggle("bg-slate-800", k === t);
@@ -569,6 +677,10 @@
       if (t === "sst") {
         initSstDates();
         if (!SST_LOADED) cargarSst();
+      }
+      if (t === "car") {
+        initCarDates();
+        cargarCar();
       }
       if (t === "indicadores") cargarIndicadores();
       if (t === "catalogos") cargarCatalogosAdmin();
@@ -694,6 +806,394 @@
         document.getElementById("modal").classList.remove("hidden");
       } catch (e) { toast(e.message, "error"); }
     }
+
+    // ======================================================================
+    // CAR · Tarjeta de control y administración de riesgos
+    // ======================================================================
+    const CAR_TIPOS = {
+      ACTO_SEGURO: "Acto seguro",
+      CONDICION_INSEGURA: "Condición insegura",
+      ACTO_INSEGURO: "Acto inseguro",
+      FALLA_ADMINISTRATIVA: "Falla administrativa",
+    };
+
+    function carTipoLabel(tipo) { return CAR_TIPOS[tipo] || tipo || "—"; }
+
+    function carBadgeClasificacion(c) {
+      return c === "ROJO"
+        ? '<span class="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">Rojo</span>'
+        : '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Amarillo</span>';
+    }
+
+    function carBadgeEstado(e) {
+      return e === "CERRADO"
+        ? '<span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Cerrada</span>'
+        : '<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Pendiente</span>';
+    }
+
+    function initCarDates() {
+      const hoy = hoyISO();
+      const d = document.getElementById("fCarDesde");
+      const h = document.getElementById("fCarHasta");
+      if (!h.value) h.value = hoy;
+      if (!d.value) {
+        const desde = new Date(hoy + "T12:00:00");
+        desde.setDate(desde.getDate() - 29);
+        d.value = desde.toISOString().slice(0, 10);
+      }
+    }
+
+    function carRango() {
+      let desde = document.getElementById("fCarDesde").value;
+      let hasta = document.getElementById("fCarHasta").value;
+      if (!desde && hasta) desde = hasta;
+      if (!hasta && desde) hasta = desde;
+      if (!desde && !hasta) { desde = hoyISO(); hasta = hoyISO(); }
+      if (desde > hasta) { const t = desde; desde = hasta; hasta = t; }
+      return { desde, hasta };
+    }
+
+    function carFiltros() {
+      const p = new URLSearchParams();
+      const { desde, hasta } = carRango();
+      p.set("desde", desde);
+      p.set("hasta", hasta);
+      const estado = document.getElementById("fCarEstado").value; if (estado) p.set("estado", estado);
+      const clas = document.getElementById("fCarClasificacion").value; if (clas) p.set("clasificacion", clas);
+      const q = document.getElementById("fCarQ").value.trim(); if (q) p.set("q", q);
+      return p;
+    }
+
+    async function cargarCar() {
+      try {
+        const [rows, res] = await Promise.all([
+          api("/car?" + carFiltros().toString(), { token: getToken() }),
+          api("/car/resumen?" + carFiltros().toString(), { token: getToken() }),
+        ]);
+        CAR = rows;
+        CAR_LOADED = true;
+        document.getElementById("carTotal").textContent = res.total;
+        document.getElementById("carPendientes").textContent = res.pendientes;
+        document.getElementById("carCerrados").textContent = res.cerrados;
+        document.getElementById("carRojos").textContent = res.rojos;
+        renderCarTabla();
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) {
+          if (getToken() === "demo") {
+            document.getElementById("emptyCar").textContent = "El módulo CAR usa la base local. En modo demo solo están disponibles Fatiga y Seguridad; entra con la clave de administrador para ver CAR.";
+            document.getElementById("emptyCar").classList.remove("hidden");
+            return;
+          }
+          clearToken(); location.reload();
+        } else {
+          toast(e.message, "error");
+        }
+      }
+    }
+
+    function renderCarTabla() {
+      const tb = document.getElementById("tbodyCar");
+      document.getElementById("emptyCar").textContent = "Sin tarjetas CAR para los filtros seleccionados.";
+      document.getElementById("emptyCar").classList.toggle("hidden", CAR.length > 0);
+      tb.innerHTML = CAR.map(t => `
+        <tr class="cursor-pointer hover:bg-slate-50" onclick="verDetalleCar(${t.id_tarjeta})">
+          <td class="px-4 py-3 font-semibold text-slate-800">${esc(t.folio)}</td>
+          <td class="px-4 py-3 text-slate-500">${fmtFecha(t.fecha)}</td>
+          <td class="px-4 py-3">
+            <div class="font-medium">${esc(t.observador)}</div>
+            <div class="text-xs text-slate-400">${t.num_empleado ? "No. " + esc(t.num_empleado) : ""}</div>
+          </td>
+          <td class="px-4 py-3 text-slate-500">${esc(t.area)}</td>
+          <td class="px-4 py-3 text-slate-500">${esc(carTipoLabel(t.tipo))}</td>
+          <td class="px-4 py-3">${carBadgeClasificacion(t.clasificacion)}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="rounded-md ${t.evidencias ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-400"} px-2 py-0.5 text-xs font-semibold">
+              ${t.evidencias ? "📎 " + t.evidencias : "—"}
+            </span>
+          </td>
+          <td class="px-4 py-3">${carBadgeEstado(t.estado)}</td>
+          <td class="px-4 py-3 text-xs text-slate-500">
+            ${t.estado === "CERRADO"
+              ? `${esc(t.responsable || "—")}<div class="text-slate-400">${fmtFecha(t.fecha_cierre)}</div>`
+              : '<span class="text-amber-700">Pendiente de la parte 5</span>'}
+          </td>
+        </tr>`).join("");
+    }
+
+    function initFirmaPanel(canvas) {
+      if (!canvas || canvas._listo) return;
+      const ctx = canvas.getContext("2d");
+      let drawing = false, last = null, ink = false;
+
+      function resize() {
+        const r = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.round(r.width * dpr));
+        canvas.height = Math.max(1, Math.round(r.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, r.width, r.height);
+        ctx.strokeStyle = "#0f172a";
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ink = false;
+        CAR_FIRMA = "";
+      }
+
+      function pos(ev) {
+        const r = canvas.getBoundingClientRect();
+        return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+      }
+
+      canvas.addEventListener("pointerdown", (ev) => {
+        ev.preventDefault();
+        drawing = true; ink = true;
+        try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
+        last = pos(ev);
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#0f172a";
+        ctx.fill();
+      });
+      canvas.addEventListener("pointermove", (ev) => {
+        if (!drawing) return;
+        ev.preventDefault();
+        const p = pos(ev);
+        ctx.beginPath();
+        ctx.moveTo(last.x, last.y);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        last = p;
+      });
+      const end = (ev) => {
+        if (!drawing) return;
+        drawing = false;
+        try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+        if (ink) CAR_FIRMA = canvas.toDataURL("image/png");
+      };
+      canvas.addEventListener("pointerup", end);
+      canvas.addEventListener("pointercancel", end);
+      canvas.addEventListener("pointerleave", end);
+      canvas._resize = resize;
+      canvas._clear = resize;
+      canvas._listo = true;
+      resize();
+    }
+
+    function limpiarFirmaCar() {
+      const c = document.getElementById("carFirmaResp");
+      if (c && c._clear) c._clear();
+      CAR_FIRMA = "";
+    }
+
+    async function verDetalleCar(id) {
+      try {
+        const d = await api("/car/" + id, { token: getToken() });
+        const admin = getRole() === "admin";
+        const card = document.getElementById("modalCard");
+        card.className = "my-8 w-full max-w-3xl rounded-2xl bg-white shadow-2xl";
+        document.getElementById("modalTitle").textContent = "CAR · " + d.folio;
+
+        const evidencias = (d.lista_evidencias || []).map((e) => {
+          const url = `${e.url}?token=${encodeURIComponent(getToken())}`;
+          if (e.tipo === "FOTO") {
+            return `<a href="${url}" target="_blank" rel="noopener" class="block overflow-hidden rounded-lg border border-slate-200">
+              <img src="${url}" alt="${esc(e.nombre)}" class="h-32 w-full object-cover">
+              <div class="truncate px-2 py-1 text-[11px] text-slate-500">${esc(e.nombre)}</div>
+            </a>`;
+          }
+          return `<div class="overflow-hidden rounded-lg border border-slate-200">
+            <video src="${url}" controls preload="metadata" class="h-32 w-full bg-slate-900 object-contain"></video>
+            <div class="truncate px-2 py-1 text-[11px] text-slate-500">🎥 ${esc(e.nombre)}</div>
+          </div>`;
+        }).join("");
+
+        const cierre = d.estado === "CERRADO"
+          ? `<div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div class="text-sm font-bold text-emerald-800">Parte 5 · Hallazgo cerrado</div>
+              <div class="mt-2 grid gap-2 text-sm text-emerald-900 sm:grid-cols-2">
+                <div><span class="font-semibold">Responsable:</span> ${esc(d.responsable || "—")}</div>
+                <div><span class="font-semibold">Área:</span> ${esc(d.area_responsable || "—")}</div>
+                <div><span class="font-semibold">Fecha de cierre:</span> ${fmtFecha(d.fecha_cierre)}</div>
+                <div><span class="font-semibold">Verificación:</span> ${d.revision ? "Revisado y constatado" : "Sin verificación"}</div>
+              </div>
+              ${d.comentario_cierre ? `<div class="mt-2 text-sm text-emerald-900"><span class="font-semibold">Comentario:</span> ${esc(d.comentario_cierre)}</div>` : ""}
+            </div>`
+          : admin
+            ? `<div class="mt-5 rounded-xl border border-teal-200 bg-teal-50 p-4">
+                <div class="text-sm font-bold text-teal-900">Parte 5 · Cierre administrativo</div>
+                <p class="mt-1 text-xs text-teal-900/70">Completa el responsable, su firma y la verificación para cerrar el hallazgo.</p>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Responsable</label>
+                    <input id="carResponsable" maxlength="120" placeholder="Nombre del responsable"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Área del responsable</label>
+                    <select id="carAreaResp" class="w-full rounded-xl border border-slate-300 px-3 py-2">
+                      <option value="">Cargando áreas…</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Fecha de cierre</label>
+                    <input id="carFechaCierre" type="date" class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Comentario de cierre <span class="text-slate-400">(opcional)</span></label>
+                    <input id="carComentario" maxlength="2000" placeholder="Acción implementada, evidencia revisada…"
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <div class="mb-1 flex items-center justify-between">
+                    <label class="text-xs font-medium text-slate-600">Firma del responsable</label>
+                    <button type="button" onclick="limpiarFirmaCar()" class="text-xs text-slate-400 hover:text-slate-700">Limpiar</button>
+                  </div>
+                  <canvas id="carFirmaResp" class="h-32 w-full rounded-xl border-2 border-dashed border-slate-300 bg-white"></canvas>
+                </div>
+                <label class="mt-3 flex items-start gap-2 text-sm text-slate-600">
+                  <input id="carRevision" type="checkbox" checked class="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500" />
+                  <span>Revisé y constaté la implementación de las acciones correctivas.</span>
+                </label>
+                <button type="button" onclick="cerrarCar(${d.id_tarjeta})"
+                        class="mt-4 w-full rounded-xl bg-teal-600 py-3 font-semibold text-white hover:bg-teal-700">Cerrar hallazgo</button>
+              </div>`
+            : `<div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                Solo el administrador puede completar la parte 5 y cerrar este hallazgo.
+              </div>`;
+
+        document.getElementById("modalBody").innerHTML = `
+          <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="text-lg font-bold">${esc(d.folio)}</div>
+              <div class="text-sm text-slate-500">${esc(d.observador)} · ${esc(d.area)} · ${fmtFecha(d.fecha)}</div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              ${carBadgeClasificacion(d.clasificacion)}
+              ${carBadgeEstado(d.estado)}
+            </div>
+          </div>
+
+          <div class="grid gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-2">
+            <div><span class="font-semibold">Tipo:</span> ${esc(carTipoLabel(d.tipo))}</div>
+            <div><span class="font-semibold">¿Controlado?:</span> ${d.controlado === "SI" ? "Sí" : "No"}</div>
+            <div><span class="font-semibold">Fecha compromiso:</span> ${fmtFecha(d.fecha_compromiso)}</div>
+            <div><span class="font-semibold">No. empleado:</span> ${d.num_empleado ?? "—"}</div>
+          </div>
+
+          <div class="mt-4">
+            <div class="text-xs font-bold uppercase tracking-wide text-slate-400">Descripción detallada</div>
+            <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${esc(d.descripcion)}</p>
+          </div>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 p-3">
+              <div class="text-xs font-bold uppercase tracking-wide text-slate-400">Acciones inmediatas</div>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${esc(d.acciones_inmediatas || "—")}</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 p-3">
+              <div class="text-xs font-bold uppercase tracking-wide text-slate-400">Acciones definitivas</div>
+              <p class="mt-1 whitespace-pre-wrap text-sm text-slate-700">${esc(d.acciones_definitivas || "—")}</p>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="text-xs font-bold uppercase tracking-wide text-slate-400">Evidencia</div>
+            ${evidencias ? `<div class="mt-2 grid gap-2 sm:grid-cols-3">${evidencias}</div>` : '<p class="mt-1 text-sm text-slate-400">Sin evidencia adjunta.</p>'}
+          </div>
+
+          <div class="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <div class="mb-1 text-xs font-semibold text-slate-500">Firma del emisor</div>
+              <img src="${esc(d.firma_emisor)}" alt="Firma del emisor" class="h-24 w-full rounded-lg border border-slate-200 bg-white object-contain">
+            </div>
+            <div>
+              <div class="mb-1 text-xs font-semibold text-slate-500">Firma del responsable</div>
+              ${d.firma_responsable
+                ? `<img src="${esc(d.firma_responsable)}" alt="Firma del responsable" class="h-24 w-full rounded-lg border border-slate-200 bg-white object-contain">`
+                : '<div class="flex h-24 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400">Pendiente de cierre</div>'}
+            </div>
+          </div>
+
+          ${cierre}`;
+
+        document.getElementById("modal").classList.remove("hidden");
+
+        if (d.estado !== "CERRADO" && admin) {
+          // Carga las áreas del catálogo CAR en el cierre.
+          api("/car/catalogos", { token: getToken() }).then((c) => {
+            const sel = document.getElementById("carAreaResp");
+            if (!sel) return;
+            sel.innerHTML = '<option value="">Selecciona el área</option>' +
+              (c.areas || []).map(a => `<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
+            const match = [...sel.options].find(o => o.value === d.area);
+            if (match) sel.value = d.area;
+          }).catch(() => {});
+
+          const f = document.getElementById("carFechaCierre");
+          if (f) f.value = hoyISO();
+          requestAnimationFrame(() => initFirmaPanel(document.getElementById("carFirmaResp")));
+        }
+      } catch (e) {
+        toast(e.message, "error");
+      }
+    }
+
+    async function cerrarCar(id) {
+      const responsable = document.getElementById("carResponsable")?.value.trim() || "";
+      const area = document.getElementById("carAreaResp")?.value || "";
+      const fecha = document.getElementById("carFechaCierre")?.value || null;
+      const comentario = document.getElementById("carComentario")?.value.trim() || null;
+      const revision = document.getElementById("carRevision")?.checked ?? true;
+      if (!responsable) { toast("Escribe el nombre del responsable.", "error"); return; }
+      if (!area) { toast("Selecciona el área del responsable.", "error"); return; }
+      if (!CAR_FIRMA) { toast("Falta la firma del responsable.", "error"); return; }
+
+      try {
+        await api(`/car/${id}/cierre`, {
+          method: "POST",
+          token: getToken(),
+          body: {
+            responsable,
+            area_responsable: area,
+            firma_responsable: CAR_FIRMA,
+            comentario_cierre: comentario,
+            fecha_cierre: fecha,
+            revision,
+          },
+        });
+        toast("Hallazgo cerrado. La parte 5 quedó registrada.", "ok");
+        cerrarModal();
+        cargarCar();
+      } catch (e) {
+        toast(e.message, "error");
+      }
+    }
+
+    document.getElementById("tabCar").addEventListener("click", () => setTab("car"));
+    document.getElementById("fCarAplicar").addEventListener("click", cargarCar);
+    document.getElementById("fCarQ").addEventListener("keydown", e => { if (e.key === "Enter") cargarCar(); });
+    document.getElementById("fCarHoy").addEventListener("click", () => {
+      const hoy = hoyISO();
+      document.getElementById("fCarDesde").value = hoy;
+      document.getElementById("fCarHasta").value = hoy;
+      document.getElementById("fCarEstado").value = "";
+      document.getElementById("fCarClasificacion").value = "";
+      document.getElementById("fCarQ").value = "";
+      cargarCar();
+    });
+    document.getElementById("fCarCsv").addEventListener("click", () => {
+      const { desde, hasta } = carRango();
+      const cols = ["folio", "fecha", "observador", "area", "tipo", "clasificacion", "controlado", "estado", "responsable", "fecha_cierre", "evidencias"];
+      const head = cols.join(",");
+      const rows = CAR.map(t => cols.map(c => `"${String(t[c] ?? "").replace(/"/g, '""')}"`).join(","));
+      const csv = "\uFEFF" + [head, ...rows].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url; a.download = `car_${desde}_a_${hasta}.csv`; a.click();
+      URL.revokeObjectURL(url);
+    });
 
     // ======================================================================
     // Indicadores (Fatiga + Seguridad)
@@ -840,13 +1340,30 @@
     // ======================================================================
     async function cargarCatalogosAdmin() {
       if (getRole() !== "admin") return;
+
+      // Los catálogos CAR viven en su propia base local y deben cargar aunque
+      // RDS (seguridad/fatiga) no esté disponible en este equipo.
+      try {
+        const cc = await api("/car/catalogos", { token: getToken() });
+        renderCatalogo("catAreasCar", cc.areas || [], "car-area");
+      } catch (e) {
+        if (/401|clave/i.test(e.message)) {
+          if (getToken() === "demo") {
+            renderCatalogo("catAreasCar", [], "car-area");
+          } else {
+            clearToken(); location.reload(); return;
+          }
+        }
+        toast("Catálogo CAR: " + e.message, "error");
+      }
+
       try {
         const c = await api("/sst/catalogos", { token: getToken() });
         renderCatalogo("catAuditores", c.auditores || [], "auditor");
         renderCatalogo("catAreas", c.areas || [], "area");
       } catch (e) {
-        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); }
-        else toast(e.message, "error");
+        if (/401|clave/i.test(e.message)) { clearToken(); location.reload(); return; }
+        toast("Catálogo de seguridad: " + e.message, "error");
       }
     }
 
@@ -891,6 +1408,25 @@
       e.preventDefault();
       agregarCatalogo("areas", "nuevaArea");
     });
+    document.getElementById("formAreaCar").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("nuevaAreaCar");
+      const nombre = input.value.trim();
+      if (nombre.length < 2) {
+        toast("Escribe un área o departamento de al menos 2 caracteres.", "error");
+        input.focus();
+        return;
+      }
+      try {
+        await api("/car/areas", { method: "POST", body: { nombre }, token: getToken() });
+        input.value = "";
+        toast("Área CAR agregada al catálogo", "ok");
+        cargarCatalogosAdmin();
+      } catch (err) {
+        if (/401|clave/i.test(err.message)) { clearToken(); location.reload(); }
+        else toast(err.message, "error");
+      }
+    });
     document.getElementById("catAuditores").addEventListener("click", async (e) => {
       const btn = e.target.closest("[data-del-auditor]");
       if (!btn) return;
@@ -908,6 +1444,16 @@
       try {
         await api(`/sst/areas/${btn.dataset.delArea}`, { method: "DELETE", token: getToken() });
         toast("Área quitada", "ok");
+        cargarCatalogosAdmin();
+      } catch (err) { toast(err.message, "error"); }
+    });
+    document.getElementById("catAreasCar").addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-del-car-area]");
+      if (!btn) return;
+      if (!confirm("¿Quitar esta área del catálogo CAR? Las tarjetas ya guardadas no cambian.")) return;
+      try {
+        await api(`/car/areas/${btn.dataset.delCarArea}`, { method: "DELETE", token: getToken() });
+        toast("Área CAR quitada", "ok");
         cargarCatalogosAdmin();
       } catch (err) { toast(err.message, "error"); }
     });

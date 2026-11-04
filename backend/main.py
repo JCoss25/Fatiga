@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from . import scoring
 from .auth import require_reports, role_for
+from .car.router import router as car_router
 from .comercial.db import SessionLocal as CotSessionLocal
 from .comercial.router import procesar_recordatorios as procesar_recordatorios_comercial
 from .comercial.router import router as comercial_router
@@ -65,6 +66,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Kogn1v1s · Fatiga, Seguridad y Comercial", lifespan=lifespan)
 app.include_router(sst_router)
+app.include_router(car_router)
 app.include_router(indicadores_router)
 app.include_router(comercial_router)
 
