@@ -67,23 +67,5 @@ CREATE TABLE IF NOT EXISTS car_evidencias (
   KEY idx_car_evidencia_tarjeta (id_tarjeta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Áreas iniciales. El administrador puede quitarlas o agregar más desde
--- Panel → Catálogos. Si ya existen, no se duplican.
-INSERT IGNORE INTO car_areas (nombre) VALUES
-  ('Almacén'),
-  ('Calidad'),
-  ('Mantenimiento'),
-  ('Operaciones'),
-  ('Seguridad y Salud'),
-  ('TI');
-
--- Carga inicial con los departamentos reales de la tabla `usuarios` que
--- alimenta Fatiga. Si RH agrega un departamento nuevo, se sumará al volver a
--- ejecutar la migración. Los que el administrador quite (activo=0) no se
--- reactivan porque el nombre sigue siendo único.
-INSERT IGNORE INTO car_areas (nombre)
-SELECT DISTINCT TRIM(departamento)
-FROM usuarios
-WHERE estatus = 1
-  AND departamento IS NOT NULL
-  AND TRIM(departamento) <> '';
+-- El catálogo de áreas/departamentos CAR arranca vacío a propósito.
+-- El administrador lo captura desde Panel → Catálogos → Áreas CAR.

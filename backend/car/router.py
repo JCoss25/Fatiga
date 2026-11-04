@@ -22,7 +22,7 @@ from ..auth import require_admin, require_reports, role_for
 from ..db import get_db as main_get_db
 from ..models import Usuario
 from ..tz import ahora, hoy
-from .db import CAR_DATABASE_URL, ROOT, engine, get_db, init_local_schema
+from .db import ROOT, get_db, init_local_schema
 from .models import CarArea, CarEvidencia, CarTarjeta
 from .schemas import (
     CarAreaIn, CarAreaOut, CarCatalogosOut, CarCierreIn, CarDetalleOut,
@@ -41,33 +41,6 @@ MAX_FOTO_MB = int(os.getenv("CAR_MAX_FOTO_MB", "12"))
 MAX_VIDEO_MB = int(os.getenv("CAR_MAX_VIDEO_MB", "80"))
 CLOUDFRONT_BASE = "https://dvctlemkfvc4i.cloudfront.net/"
 
-LOCAL_MODE = bool(CAR_DATABASE_URL) or engine.url.get_backend_name() == "sqlite"
-# En local se usa el directorio de ejemplo. Con CAR_EMPLEADOS_RDS=1 se consulta
-# la tabla real `usuarios` de Fatiga aunque las tarjetas sigan en SQLite.
-CAR_EMPLEADOS_RDS = os.getenv("CAR_EMPLEADOS_RDS", "0").strip().lower() in ("1", "true", "si", "sí")
-
-# Directorio de respaldo para probar el flujo sin RDS. En producción, si la
-# base de Fatiga responde, se usa la tabla real `usuarios`.
-EMPLEADOS_DEMO = [
-    {
-        "id_usuario": 9001, "nombre_completo": "J. Ramírez", "num_empleado": 10667,
-        "departamento": "Línea 2", "puesto": "Operador", "empresa": "Planta",
-    },
-    {
-        "id_usuario": 9002, "nombre_completo": "M. Salas", "num_empleado": 10662,
-        "departamento": "Recibo", "puesto": "Almacenista", "empresa": "Planta",
-    },
-    {
-        "id_usuario": 9003, "nombre_completo": "Colaborador C", "num_empleado": 10664,
-        "departamento": "Operaciones", "puesto": "Operador", "empresa": "Planta",
-    },
-    {
-        "id_usuario": 9004, "nombre_completo": "Jesús Coss", "num_empleado": 10701,
-        "departamento": "TI", "puesto": "Analista", "empresa": "Corporativo",
-    },
-]
-
-
 def _decode_img(raw) -> Optional[str]:
     if raw is None:
         return None
@@ -81,23 +54,6 @@ def _decode_img(raw) -> Optional[str]:
     if val.startswith("http"):
         return val
     return CLOUDFRONT_BASE + val.lstrip("/")
-
-
-def _demo_filtrados(q: str) -> List[dict]:
-    q = (q or "").strip().lower()
-    rows = []
-    for e in EMPLEADOS_DEMO:
-        texto = " ".join(str(e.get(k) or "") for k in ("nombre_completo", "num_empleado", "departamento", "puesto", "empresa")).lower()
-        if not q or q in texto:
-            rows.append({**e, "fuente": "local"})
-    return rows
-
-
-def _demo_por_id(id_usuario: int) -> Optional[dict]:
-    for e in EMPLEADOS_DEMO:
-        if e["id_usuario"] == id_usuario:
-            return {**e, "fuente": "local"}
-    return None
 
 
 def _buscar_en_fatiga(q: str, db: Session) -> List[dict]:
@@ -130,16 +86,12 @@ def _buscar_en_fatiga(q: str, db: Session) -> List[dict]:
 
 
 def _empleado_para_tarjeta(id_usuario: int, db: Session) -> Optional[dict]:
-    if LOCAL_MODE and not CAR_EMPLEADOS_RDS:
-        return _demo_por_id(id_usuario)
     try:
         u = db.get(Usuario, id_usuario)
     except Exception as exc:  # noqa: BLE001
-        if LOCAL_MODE:
-            return _demo_por_id(id_usuario)
         raise HTTPException(
             status_code=503,
-            detail="No se pudo consultar la base de Fatiga. Revisa la conexión a RDS.",
+            detail="No se pudo consultar la base de empleados. Revisa la conexión a RDS.",
         ) from exc
     if not u or u.estatus != 1:
         return None
@@ -232,16 +184,12 @@ def empleados(q: str = Query(default="", max_length=80), db: Session = Depends(m
     Si RDS no está disponible en el equipo local, responde con un directorio
     de ejemplo y lo marca con fuente="local".
     """
-    if LOCAL_MODE and not CAR_EMPLEADOS_RDS:
-        return _demo_filtrados(q)
     try:
         return _buscar_en_fatiga(q, db)
     except Exception as exc:  # noqa: BLE001
-        if LOCAL_MODE:
-            return _demo_filtrados(q)
         raise HTTPException(
             status_code=503,
-            detail="No se pudo consultar la base de Fatiga. Revisa la conexión a RDS.",
+            detail="No se pudo consultar la base de empleados. Revisa la conexión a RDS.",
         ) from exc
 
 

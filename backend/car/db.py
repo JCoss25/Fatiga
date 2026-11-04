@@ -11,22 +11,13 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 ROOT = Path(__file__).resolve().parents[2]  # app-fatiga/
 load_dotenv(ROOT / ".env")
 
 CAR_DATABASE_URL = os.getenv("CAR_DATABASE_URL", "").strip()
-
-AREAS_SEED = [
-    "Almacén",
-    "Calidad",
-    "Mantenimiento",
-    "Operaciones",
-    "Seguridad y Salud",
-    "TI",
-]
 
 
 def _database_url() -> str:
@@ -73,7 +64,10 @@ def get_db():
 
 
 def init_local_schema() -> None:
-    """Crea tablas y áreas iniciales solo cuando se usa SQLite local.
+    """Crea las tablas cuando se usa SQLite local.
+
+    No siembra áreas: el administrador las captura desde
+    Panel → Catálogos → Áreas / departamentos CAR.
 
     En MySQL/RDS no se ejecuta: las tablas se crean con db/migrate_car.py.
     """
@@ -83,11 +77,3 @@ def init_local_schema() -> None:
     from . import models  # registra las tablas en Base.metadata
 
     Base.metadata.create_all(engine)
-    db = SessionLocal()
-    try:
-        if db.scalar(select(models.CarArea).limit(1)) is None:
-            for nombre in AREAS_SEED:
-                db.add(models.CarArea(nombre=nombre, activo=1))
-            db.commit()
-    finally:
-        db.close()

@@ -65,7 +65,9 @@ Flujo:
 Catálogos y datos:
 
 - `Panel → Catálogos → Áreas / departamentos CAR` controla el desplegable del
-  formulario. El catálogo de Seguridad sigue siendo independiente.
+  formulario. El catálogo arranca **vacío**: el administrador debe capturar las
+  áreas antes de emitir tarjetas. El catálogo de Seguridad sigue siendo
+  independiente.
 - Base local: `CAR_DATABASE_URL=sqlite:///./car_local.db`. Se crea con
   `python db/migrate_car.py`.
 - Producción: elimina `CAR_DATABASE_URL` del `.env` y ejecuta
@@ -78,10 +80,9 @@ Catálogos y datos:
   para hacer ese cambio sin tocar el formulario. En producción conviene usar
   URLs firmadas de S3 en lugar de pasar la clave de reportes en la URL de la
   evidencia (la vista local del panel lo hace así por simplicidad).
-- Si la base de Fatiga no responde en local, el buscador usa un directorio de
-  ejemplo y lo avisa en pantalla. En producción se usa la tabla real `usuarios`.
-  Si quieres usar la tabla real aun con las tarjetas en SQLite local, agrega
-  `CAR_EMPLEADOS_RDS=1` al `.env` (requiere acceso a RDS).
+- El observador **siempre** se consulta en la tabla real `usuarios` que alimenta
+  Fatiga. No hay directorio de ejemplo: si RDS no responde, el formulario
+  muestra el error y no permite emitir.
 
 ## Módulo Comercial (Cotización de daños)
 

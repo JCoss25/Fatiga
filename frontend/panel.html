@@ -1076,6 +1076,8 @@
           </div>
 
           <div class="grid gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-2">
+            <div><span class="font-semibold">Folio:</span> <span class="font-mono font-bold text-slate-800">${esc(d.folio)}</span></div>
+            <div><span class="font-semibold">Fecha de emisión:</span> ${fmtFecha(d.fecha)}</div>
             <div><span class="font-semibold">Tipo:</span> ${esc(carTipoLabel(d.tipo))}</div>
             <div><span class="font-semibold">¿Controlado?:</span> ${d.controlado === "SI" ? "Sí" : "No"}</div>
             <div><span class="font-semibold">Fecha compromiso:</span> ${fmtFecha(d.fecha_compromiso)}</div>

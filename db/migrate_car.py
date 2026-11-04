@@ -1,7 +1,8 @@
 """Migración del módulo CAR (tablas car_*).
 
-- SQLite local: crea las tablas con SQLAlchemy y siembra áreas iniciales.
+- SQLite local: crea las tablas con SQLAlchemy.
 - MySQL/RDS: ejecuta db/car_schema.sql con las credenciales admin.
+- No siembra áreas: el administrador las captura desde el panel.
 
 Uso:
     python db/migrate_car.py
@@ -18,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / ".env")
 
-from backend.car.db import AREAS_SEED, Base, engine  # noqa: E402
+from backend.car.db import Base, engine  # noqa: E402
 from backend.car import models  # noqa: E402,F401
 
 
@@ -39,19 +40,7 @@ def main():
     (ROOT / "data" / "car_evidencias").mkdir(parents=True, exist_ok=True)
 
     if engine.url.get_backend_name() == "sqlite":
-        from backend.car.db import SessionLocal
-        from backend.car.models import CarArea
-
         Base.metadata.create_all(engine)
-        db = SessionLocal()
-        try:
-            existentes = {a.nombre for a in db.query(CarArea).all()}
-            for nombre in AREAS_SEED:
-                if nombre not in existentes:
-                    db.add(CarArea(nombre=nombre, activo=1))
-            db.commit()
-        finally:
-            db.close()
         print(f"Tablas CAR creadas/verificadas en SQLite: {engine.url.database}")
         return
 

@@ -209,7 +209,7 @@
           <div class="mt-3 flex flex-wrap items-center gap-3">
             <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
               <span class="h-2 w-2 rounded-full bg-teal-500"></span>
-              Conectado a la base local / RDS
+              Observador desde la base de empleados
             </div>
             <button id="btnEjemplo" type="button" class="text-sm font-semibold text-teal-700 hover:underline">Ver ejemplo →</button>
           </div>
@@ -247,7 +247,6 @@
                  class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100" />
           <div id="empResults" class="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 empty:hidden"></div>
           <p class="mt-2 text-xs text-slate-400">Se consulta la misma tabla de personal que alimenta el test de Fatiga.</p>
-          <p id="empFuente" class="mt-1 hidden rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800"></p>
         </div>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
@@ -260,11 +259,16 @@
             <select id="area" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
               <option value="">Cargando áreas…</option>
             </select>
-            <p class="mt-1 text-xs text-slate-400">Lista administrada desde Panel → Catálogos → Áreas CAR.</p>
+            <p id="areaHint" class="mt-1 text-xs text-slate-400">Lista administrada desde Panel → Catálogos → Áreas CAR.</p>
           </div>
           <div class="sm:col-span-2">
-            <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-              <b>Folio:</b> se asigna automáticamente al guardar con el formato <span class="font-mono">CAR-AAAA-###</span>. Es la referencia para que el administrador cierre la parte 5.
+            <div id="folioCard" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
+              <div>
+                <div class="text-xs font-semibold uppercase tracking-wide text-teal-700">Folio de la incidencia</div>
+                <div id="folioVista" class="font-mono text-lg font-bold text-slate-500">Pendiente de asignar</div>
+                <p id="folioAyuda" class="text-xs text-teal-900/70">Se genera automáticamente al emitir la tarjeta.</p>
+              </div>
+              <div class="rounded-md bg-white px-2 py-1 text-xs font-semibold text-teal-700 ring-1 ring-teal-200">CAR-AAAA-###</div>
             </div>
           </div>
         </div>
@@ -644,17 +648,12 @@
     async function buscarEmpleados() {
       const q = $("empSearch").value.trim();
       if (q.length < 2) { $("empResults").innerHTML = ""; return; }
-      $("empFuente").classList.add("hidden");
       try {
         const rows = await api("/car/empleados?q=" + encodeURIComponent(q));
         window.__EMP_MAP = new Map();
         if (!rows.length) {
-          $("empResults").innerHTML = '<div class="px-3 py-3 text-sm text-slate-500">Sin coincidencias. Revisa el nombre o la base de Fatiga.</div>';
+          $("empResults").innerHTML = '<div class="px-3 py-3 text-sm text-slate-500">Sin coincidencias. Revisa el nombre o la base de empleados.</div>';
           return;
-        }
-        if (rows.some(r => r.fuente === "local")) {
-          $("empFuente").textContent = "Directorio local de ejemplo: la base de Fatiga no está disponible en este equipo. En producción se usa la tabla real de usuarios.";
-          $("empFuente").classList.remove("hidden");
         }
         $("empResults").innerHTML = rows.map((e) => {
           window.__EMP_MAP.set(e.id_usuario, e);
@@ -704,10 +703,14 @@
       const sel = $("area");
       if (!areas || !areas.length) {
         sel.innerHTML = '<option value="">Sin áreas registradas en el panel</option>';
+        $("areaHint").textContent = "El administrador aún no ha agregado áreas. Debe hacerlo en Panel → Catálogos → Áreas / departamentos CAR.";
+        $("areaHint").className = "mt-1 text-xs font-medium text-amber-700";
         return;
       }
       sel.innerHTML = '<option value="">Selecciona el área / departamento</option>' +
         areas.map(a => `<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
+      $("areaHint").textContent = "Lista administrada desde Panel → Catálogos → Áreas CAR.";
+      $("areaHint").className = "mt-1 text-xs text-slate-400";
     }
 
     async function cargarAreas() {
@@ -943,6 +946,7 @@
         ultimaEmitida = { ...r, ...res, evidencias: r.evidencias };
         mostrarExito(ultimaEmitida);
         resetFormulario();
+        mostrarFolio(ultimaEmitida.folio, true);
       } catch (e) {
         toast(e.message, "error");
         btn.disabled = false;
@@ -950,7 +954,25 @@
       }
     });
 
+    function mostrarFolio(folio, asignado) {
+      const card = $("folioCard");
+      const valor = $("folioVista");
+      const ayuda = $("folioAyuda");
+      if (asignado && folio) {
+        valor.textContent = folio;
+        valor.className = "font-mono text-lg font-bold text-teal-700";
+        ayuda.textContent = "Folio asignado. La tarjeta queda pendiente de cierre administrativo.";
+        card.className = "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-300 bg-teal-50 px-4 py-3";
+      } else {
+        valor.textContent = "Pendiente de asignar";
+        valor.className = "font-mono text-lg font-bold text-slate-500";
+        ayuda.textContent = "Se genera automáticamente al emitir la tarjeta.";
+        card.className = "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3";
+      }
+    }
+
     function mostrarExito(r) {
+      mostrarFolio(r.folio, true);
       $("successBody").innerHTML = `
         <div class="rounded-xl bg-slate-50 px-4 py-3 text-left text-sm text-slate-600">
           <div class="flex items-center justify-between gap-3">
@@ -966,6 +988,7 @@
 
     $("btnNueva").addEventListener("click", () => {
       $("success").classList.add("hidden");
+      mostrarFolio(null, false);
       $("empSearch").focus();
     });
     $("btnVerUltima").addEventListener("click", () => {
@@ -985,12 +1008,12 @@
       $("empSearchWrap").classList.remove("hidden");
       $("empSearch").value = "";
       $("empResults").innerHTML = "";
-      $("empFuente").classList.add("hidden");
       $("firmaEmisor")._clear();
       $("nombreEmisor").textContent = "\u00a0";
       $("evidenciaLista").innerHTML = "";
       actualizarEstadoEvidencias();
       pintarSegmentos();
+      mostrarFolio(null, false);
       const btn = $("btnGuardar");
       btn.disabled = false;
       btn.textContent = "Emitir tarjeta CAR";
