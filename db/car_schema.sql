@@ -76,3 +76,14 @@ INSERT IGNORE INTO car_areas (nombre) VALUES
   ('Operaciones'),
   ('Seguridad y Salud'),
   ('TI');
+
+-- Carga inicial con los departamentos reales de la tabla `usuarios` que
+-- alimenta Fatiga. Si RH agrega un departamento nuevo, se sumará al volver a
+-- ejecutar la migración. Los que el administrador quite (activo=0) no se
+-- reactivan porque el nombre sigue siendo único.
+INSERT IGNORE INTO car_areas (nombre)
+SELECT DISTINCT TRIM(departamento)
+FROM usuarios
+WHERE estatus = 1
+  AND departamento IS NOT NULL
+  AND TRIM(departamento) <> '';
