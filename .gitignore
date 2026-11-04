@@ -11,6 +11,8 @@ node_modules/
 *.log
 # AWS
 .aws/
+# Manual con contraseñas: NO publicar
+manual/
 
 # PID del servidor local
 .server.pid
