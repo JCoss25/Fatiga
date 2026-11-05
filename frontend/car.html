@@ -251,15 +251,28 @@
 
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
           <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="zona">Zona <span class="text-red-500">*</span></label>
+            <select id="zona" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
+              <option value="">Cargando zonas…</option>
+            </select>
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              <button type="button" id="btnGeo"
+                      class="rounded-lg border border-teal-300 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100">
+                📍 Detectar mi zona
+              </button>
+              <span id="geoStatus" class="text-xs text-slate-400">Se detecta con la ubicación del dispositivo.</span>
+            </div>
+          </div>
+          <div>
             <label class="mb-1 block text-xs font-medium text-slate-500" for="fecha">Fecha de emisión</label>
             <input id="fecha" type="date" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required />
           </div>
-          <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500" for="area">Área / departamento del observador</label>
+          <div class="sm:col-span-2">
+            <label class="mb-1 block text-xs font-medium text-slate-500" for="area">Área / departamento del observador <span class="text-red-500">*</span></label>
             <select id="area" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" required>
-              <option value="">Cargando áreas…</option>
+              <option value="">Selecciona primero la zona</option>
             </select>
-            <p id="areaHint" class="mt-1 text-xs text-slate-400">Lista administrada desde Panel → Catálogos → Áreas CAR.</p>
+            <p id="areaHint" class="mt-1 text-xs text-slate-400">Las áreas se administran por zona desde Panel → Catálogos → Zonas CAR.</p>
           </div>
           <div class="sm:col-span-2">
             <div id="folioCard" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3">
@@ -416,36 +429,11 @@
         </div>
       </section>
 
-      <!-- 4. Acciones -->
+      <!-- 4. Firma y envío -->
       <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
           <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">4</span>
-          Acciones a tomar
-        </h2>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500" for="inmediatas">Inmediatas <span class="font-normal text-slate-400">(contención)</span></label>
-            <textarea id="inmediatas" rows="4" maxlength="1500" placeholder="Lo que se hizo o se hará de inmediato…"
-                      class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
-          </div>
-          <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500" for="definitivas">Definitivas <span class="font-normal text-slate-400">(acción de fondo)</span></label>
-            <textarea id="definitivas" rows="4" maxlength="1500" placeholder="Cambio, reparación, capacitación o control permanente…"
-                      class="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
-          </div>
-          <div class="sm:col-span-2 sm:max-w-xs">
-            <label class="mb-1 block text-xs font-medium text-slate-500" for="fechaCompromiso">Fecha compromiso</label>
-            <input id="fechaCompromiso" type="date" class="w-full rounded-xl border border-slate-300 px-4 py-2.5" />
-            <p class="mt-1 text-xs text-slate-400">Obligatoria cuando registras acciones definitivas.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- 5. Firma y cierre administrativo -->
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 class="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-          <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-600 text-xs text-white">5</span>
-          Firma del emisor y cierre
+          Firma del emisor y envío
         </h2>
 
         <div class="max-w-xl">
@@ -460,8 +448,9 @@
           <p id="nombreEmisor" class="mt-1 text-xs text-slate-500">&nbsp;</p>
         </div>
 
-        <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <b>Parte 5 · Cierre administrativo.</b> El responsable de las acciones correctivas, su firma y la verificación final se capturan únicamente desde el panel de reportes, por folio. Al enviar esta tarjeta quedará en estado <b>PENDIENTE</b>.
+        <div class="mt-5 rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
+          Al emitir, la tarjeta quedará <b>PENDIENTE</b>. El administrador la revisará y cerrará
+          desde el panel, registrando la <b>solución dada</b> y, si aplica, <b>evidencia fotográfica</b>.
         </div>
 
         <div class="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
@@ -507,6 +496,8 @@
     let firmaEmisor = "";
     let tarjetaPreview = null;
     let ultimaEmitida = null;
+    let ZONAS = [];
+    let GEO = { lat: null, lng: null, origen: "MANUAL" };
 
     $("fechaHoy").textContent = new Date().toLocaleDateString("es-MX", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
     $("fecha").value = hoyISO();
@@ -698,30 +689,105 @@
       if (opt) $("area").value = opt.value;
     }
 
-    // ---------- Catálogo de áreas ----------
-    function llenarAreas(areas) {
+    // ---------- Zonas, áreas por zona y geocercas ----------
+    function distanciaMetros(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = (d) => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(a));
+    }
+
+    function llenarAreasDeZona() {
       const sel = $("area");
-      if (!areas || !areas.length) {
-        sel.innerHTML = '<option value="">Sin áreas registradas en el panel</option>';
-        $("areaHint").textContent = "El administrador aún no ha agregado áreas. Debe hacerlo en Panel → Catálogos → Áreas / departamentos CAR.";
+      const zid = Number($("zona").value) || null;
+      const z = ZONAS.find(x => x.id_zona === zid);
+      const areas = (z && z.areas) || [];
+      if (!zid) {
+        sel.innerHTML = '<option value="">Selecciona primero la zona</option>';
+        $("areaHint").textContent = "Las áreas se administran por zona desde Panel → Catálogos → Zonas CAR.";
+        $("areaHint").className = "mt-1 text-xs text-slate-400";
+        return;
+      }
+      if (!areas.length) {
+        sel.innerHTML = '<option value="">La zona no tiene áreas configuradas</option>';
+        $("areaHint").textContent = "El administrador debe agregar áreas a esta zona en Panel → Catálogos → Zonas CAR.";
         $("areaHint").className = "mt-1 text-xs font-medium text-amber-700";
         return;
       }
       sel.innerHTML = '<option value="">Selecciona el área / departamento</option>' +
         areas.map(a => `<option value="${esc(a.nombre)}">${esc(a.nombre)}</option>`).join("");
-      $("areaHint").textContent = "Lista administrada desde Panel → Catálogos → Áreas CAR.";
+      $("areaHint").textContent = "Áreas configuradas para la zona " + z.nombre + ".";
       $("areaHint").className = "mt-1 text-xs text-slate-400";
     }
 
-    async function cargarAreas() {
+    function llenarZonas(zonas) {
+      ZONAS = zonas || [];
+      const sel = $("zona");
+      if (!ZONAS.length) {
+        sel.innerHTML = '<option value="">Sin zonas registradas</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">Selecciona la zona</option>' +
+        ZONAS.map(z => `<option value="${z.id_zona}">${esc(z.nombre)}</option>`).join("");
+      llenarAreasDeZona();
+    }
+
+    async function cargarZonas() {
       try {
         const c = await api("/car/catalogos");
-        llenarAreas(c.areas || []);
+        llenarZonas(c.zonas || []);
       } catch (e) {
-        llenarAreas([]);
-        toast("No se pudieron cargar las áreas: " + e.message, "error");
+        llenarZonas([]);
+        toast("No se pudieron cargar las zonas: " + e.message, "error");
       }
     }
+
+    $("zona").addEventListener("change", () => {
+      GEO.origen = "MANUAL";
+      llenarAreasDeZona();
+    });
+
+    function detectarZona() {
+      const st = $("geoStatus");
+      if (!navigator.geolocation) {
+        st.textContent = "Este dispositivo no permite geolocalización.";
+        st.className = "text-xs text-amber-600";
+        return;
+      }
+      st.textContent = "Obteniendo ubicación…";
+      st.className = "text-xs text-slate-500";
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude, lng = pos.coords.longitude;
+          GEO.lat = lat; GEO.lng = lng; GEO.origen = "GEO";
+          let mejor = null, mejorD = Infinity;
+          for (const z of ZONAS) {
+            if (z.lat == null || z.lng == null) continue;
+            const d = distanciaMetros(lat, lng, z.lat, z.lng);
+            if (d <= (z.radio_m || 300) && d < mejorD) { mejor = z; mejorD = d; }
+          }
+          if (mejor) {
+            $("zona").value = String(mejor.id_zona);
+            llenarAreasDeZona();
+            st.textContent = `Zona detectada: ${mejor.nombre} (a ${Math.round(mejorD)} m). Puedes corregirla.`;
+            st.className = "text-xs font-medium text-emerald-600";
+          } else {
+            st.textContent = "No estás dentro de una geocerca configurada. Selecciona la zona manualmente.";
+            st.className = "text-xs text-amber-600";
+          }
+        },
+        () => {
+          st.textContent = "No se pudo obtener la ubicación. Selecciona la zona manualmente.";
+          st.className = "text-xs text-amber-600";
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    $("btnGeo").addEventListener("click", detectarZona);
 
     // ---------- Evidencias ----------
     $("btnFotoCamara").addEventListener("click", () => $("inputFotoCamara").click());
@@ -881,14 +947,15 @@
         fecha: $("fecha").value,
         id_usuario: EMPLEADO?.id_usuario || 0,
         observador: EMPLEADO?.nombre_completo || "",
+        id_zona: Number($("zona").value) || null,
+        lat: GEO.lat,
+        lng: GEO.lng,
+        origen_geo: GEO.origen,
         area: $("area").value,
         tipo,
         descripcion: $("descripcion").value.trim(),
         controlado,
         clasificacion,
-        acciones_inmediatas: $("inmediatas").value.trim(),
-        acciones_definitivas: $("definitivas").value.trim(),
-        fecha_compromiso: $("fechaCompromiso").value,
         firma_emisor: firmaEmisor,
         evidencias: EVIDENCIAS.map(e => ({ ...e })),
       };
@@ -902,16 +969,13 @@
         return false;
       };
       if (!EMPLEADO) return falta("Selecciona al observador de la lista de personal.", $("empSearch"));
+      if (!r.id_zona) return falta("Selecciona la zona.", $("zona"));
       if (!r.area) return falta("Selecciona el área / departamento del observador.", $("area"));
       if (!r.fecha) return falta("Selecciona la fecha de emisión.", $("fecha"));
       if (!r.tipo) return falta("Selecciona el tipo de observación o riesgo.", $("tipoGroup"));
       if (!r.descripcion) return falta("Describe detalladamente la observación o el riesgo.", $("descripcion"));
       if (!r.controlado) return falta("Indica si el riesgo se ha controlado.", $("controladoGroup"));
       if (!r.clasificacion) return falta("Selecciona la clasificación del riesgo.", $("clasificacionGroup"));
-      if (r.controlado === "NO" && !r.acciones_inmediatas) return falta("Registra la acción inmediata para el riesgo no controlado.", $("inmediatas"));
-      if (!r.acciones_inmediatas && !r.acciones_definitivas) return falta("Registra al menos una acción inmediata o definitiva.", $("inmediatas"));
-      if (r.acciones_definitivas && !r.fecha_compromiso) return falta("Selecciona la fecha compromiso de las acciones definitivas.", $("fechaCompromiso"));
-      if (r.fecha_compromiso && r.fecha && r.fecha_compromiso < r.fecha) return falta("La fecha compromiso no puede ser anterior a la fecha de emisión.", $("fechaCompromiso"));
       if (!r.firma_emisor) return falta("Falta la firma del emisor.", $("firmaEmisor"));
       if (SUBIENDO > 0) return falta("Espera a que terminen de subir las evidencias.", $("evidenciaLista"));
       return true;
@@ -931,14 +995,15 @@
           body: {
             fecha: r.fecha,
             id_usuario: r.id_usuario,
+            id_zona: r.id_zona,
+            lat: r.lat,
+            lng: r.lng,
+            origen_geo: r.origen_geo,
             area: r.area,
             tipo: r.tipo,
             descripcion: r.descripcion,
             controlado: r.controlado,
             clasificacion: r.clasificacion,
-            acciones_inmediatas: r.acciones_inmediatas || null,
-            acciones_definitivas: r.acciones_definitivas || null,
-            fecha_compromiso: r.fecha_compromiso || null,
             firma_emisor: r.firma_emisor,
             evidencias: r.evidencias.map(e => e.id_evidencia).filter(Boolean),
           },
@@ -1187,18 +1252,7 @@
           </table>
           ${rojo ? '<div class="red-note">Si marca rojo, evalúe como probable evento centinela.</div>' : ''}
 
-          <div class="band">Acciones a tomar</div>
-          <table>
-            <tr>
-              <td class="lbl">Inmediatas</td>
-              <td class="prose">${esc(r.acciones_inmediatas || "—")}</td>
-              <td class="lbl" style="width:18%">Fecha compromiso</td>
-              <td class="val" style="width:18%">${fmtFecha(r.fecha_compromiso)}</td>
-            </tr>
-            <tr><td class="lbl">Definitivas</td><td class="prose" colspan="3">${esc(r.acciones_definitivas || "—")}</td></tr>
-          </table>
-
-          <div class="band">Parte 5 · Datos del responsable de las acciones correctivas</div>
+          <div class="band">Cierre administrativo</div>
           <table>
             <tr>
               <td class="lbl">Responsable</td><td class="val">${esc(r.responsable || "Pendiente de cierre administrativo")}</td>
@@ -1222,7 +1276,7 @@
     // ---------- Arranque ----------
     pintarSegmentos();
     actualizarEstadoEvidencias();
-    cargarAreas();
+    cargarZonas();
   </script>
 </body>
 </html>

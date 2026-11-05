@@ -69,3 +69,43 @@ CREATE TABLE IF NOT EXISTS car_evidencias (
 
 -- El catálogo de áreas/departamentos CAR arranca vacío a propósito.
 -- El administrador lo captura desde Panel → Catálogos → Áreas CAR.
+
+-- ============================================================================
+--  Zonas y geocercas (nuevo)
+--  Sin FOREIGN KEY física para que kogn_rw pueda crear las tablas.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS car_zonas (
+  id_zona    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  nombre     VARCHAR(60) NOT NULL,
+  lat        DOUBLE NULL,
+  lng        DOUBLE NULL,
+  radio_m    INT UNSIGNED NOT NULL DEFAULT 300,
+  activo     TINYINT(1) NOT NULL DEFAULT 1,
+  creado_en  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_zona),
+  UNIQUE KEY uq_car_zona_nombre (nombre)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO car_zonas (nombre) VALUES
+  ('NVDC'), ('BDA'), ('GMRA'), ('LZC'), ('D2D'), ('Narro')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+
+-- Relación zona ↔ área (el área sigue viviendo en car_areas).
+CREATE TABLE IF NOT EXISTS car_zona_areas (
+  id_zona  SMALLINT UNSIGNED NOT NULL,
+  id_area  SMALLINT UNSIGNED NOT NULL,
+  PRIMARY KEY (id_zona, id_area)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Ubicación/geocerca capturada al emitir la tarjeta (1:1 con la tarjeta).
+CREATE TABLE IF NOT EXISTS car_ubicaciones (
+  id_tarjeta  BIGINT UNSIGNED NOT NULL,
+  id_zona     SMALLINT UNSIGNED NULL,
+  zona_nombre VARCHAR(60) NULL,
+  lat         DOUBLE NULL,
+  lng         DOUBLE NULL,
+  origen      VARCHAR(10) NULL,   -- GEO (geocerca) | MANUAL
+  creado_en   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_tarjeta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

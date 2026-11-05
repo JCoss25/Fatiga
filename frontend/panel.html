@@ -401,15 +401,23 @@
             </form>
             <div id="catAreas" class="mt-4 divide-y divide-slate-100"></div>
           </div>
-          <div class="min-w-0 rounded-2xl border border-teal-200 bg-white p-5">
-            <h3 class="text-sm font-bold text-slate-700">Áreas / departamentos CAR</h3>
-            <p class="mb-3 text-xs text-slate-400">Opciones del desplegable <b>Área del observador</b> de la tarjeta de riesgos.</p>
-            <form id="formAreaCar" class="flex gap-2">
-              <input id="nuevaAreaCar" maxlength="120" placeholder="Nombre del área o departamento"
-                     class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2" />
+          <div class="min-w-0 rounded-2xl border border-teal-200 bg-white p-5 lg:col-span-2">
+            <h3 class="text-sm font-bold text-slate-700">Zonas CAR y geocercas</h3>
+            <p class="mb-3 text-xs text-slate-400">Define el centro y radio de cada zona para la detección automática. Agrega las áreas que pertenecen a cada zona.</p>
+
+            <form id="formZonaCar" class="grid gap-2 sm:grid-cols-[1fr_110px_110px_110px_auto]">
+              <input id="nuevaZonaCar" maxlength="60" placeholder="Zona (ej. NVDC)"
+                     class="min-w-0 rounded-xl border border-slate-300 px-3 py-2" />
+              <input id="nuevaZonaLat" type="number" step="any" placeholder="Latitud"
+                     class="rounded-xl border border-slate-300 px-3 py-2" />
+              <input id="nuevaZonaLng" type="number" step="any" placeholder="Longitud"
+                     class="rounded-xl border border-slate-300 px-3 py-2" />
+              <input id="nuevaZonaRadio" type="number" min="10" step="10" placeholder="Radio m" value="300"
+                     class="rounded-xl border border-slate-300 px-3 py-2" />
               <button class="rounded-xl bg-teal-600 px-4 py-2 font-semibold text-white hover:bg-teal-700">Agregar</button>
             </form>
-            <div id="catAreasCar" class="mt-4 divide-y divide-slate-100"></div>
+
+            <div id="catZonasCar" class="mt-4 space-y-3"></div>
           </div>
         </div>
       </div><!-- /vistaCatalogos -->
@@ -1021,8 +1029,8 @@
             </div>`
           : admin
             ? `<div class="mt-5 rounded-xl border border-teal-200 bg-teal-50 p-4">
-                <div class="text-sm font-bold text-teal-900">Parte 5 · Cierre administrativo</div>
-                <p class="mt-1 text-xs text-teal-900/70">Completa el responsable, su firma y la verificación para cerrar el hallazgo.</p>
+                <div class="text-sm font-bold text-teal-900">Cierre del hallazgo</div>
+                <p class="mt-1 text-xs text-teal-900/70">Registra la solución dada y, si aplica, evidencia fotográfica.</p>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label class="mb-1 block text-xs font-medium text-slate-600">Responsable</label>
@@ -1039,10 +1047,15 @@
                     <label class="mb-1 block text-xs font-medium text-slate-600">Fecha de cierre</label>
                     <input id="carFechaCierre" type="date" class="w-full rounded-xl border border-slate-300 px-3 py-2" />
                   </div>
-                  <div>
-                    <label class="mb-1 block text-xs font-medium text-slate-600">Comentario de cierre <span class="text-slate-400">(opcional)</span></label>
-                    <input id="carComentario" maxlength="2000" placeholder="Acción implementada, evidencia revisada…"
-                           class="w-full rounded-xl border border-slate-300 px-3 py-2" />
+                  <div class="sm:col-span-2">
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Solución dada <span class="text-red-500">*</span></label>
+                    <textarea id="carComentario" rows="3" maxlength="4000" placeholder="Describe la solución o acción implementada…"
+                              class="w-full rounded-xl border border-slate-300 px-3 py-2"></textarea>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="mb-1 block text-xs font-medium text-slate-600">Evidencia fotográfica <span class="text-slate-400">(opcional)</span></label>
+                    <input id="carEvidenciaCierre" type="file" accept="image/*" multiple
+                           class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
                   </div>
                 </div>
                 <div class="mt-3">
@@ -1078,9 +1091,9 @@
           <div class="grid gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-600 sm:grid-cols-2">
             <div><span class="font-semibold">Folio:</span> <span class="font-mono font-bold text-slate-800">${esc(d.folio)}</span></div>
             <div><span class="font-semibold">Fecha de emisión:</span> ${fmtFecha(d.fecha)}</div>
+            <div><span class="font-semibold">Zona:</span> ${esc(d.zona || "—")}</div>
             <div><span class="font-semibold">Tipo:</span> ${esc(carTipoLabel(d.tipo))}</div>
             <div><span class="font-semibold">¿Controlado?:</span> ${d.controlado === "SI" ? "Sí" : "No"}</div>
-            <div><span class="font-semibold">Fecha compromiso:</span> ${fmtFecha(d.fecha_compromiso)}</div>
             <div><span class="font-semibold">No. empleado:</span> ${d.num_empleado ?? "—"}</div>
           </div>
 
@@ -1142,17 +1155,38 @@
       }
     }
 
+    async function subirEvidenciasCierre(files) {
+      const ids = [];
+      for (const f of files) {
+        const fd = new FormData();
+        fd.append("tipo", "FOTO");
+        fd.append("archivo", f);
+        const res = await fetch("api/car/evidencias", { method: "POST", body: fd });
+        if (!res.ok) {
+          let msg = "No se pudo subir la evidencia";
+          try { const j = await res.json(); msg = j.detail || msg; } catch (_) {}
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        ids.push(data.id_evidencia);
+      }
+      return ids;
+    }
+
     async function cerrarCar(id) {
       const responsable = document.getElementById("carResponsable")?.value.trim() || "";
       const area = document.getElementById("carAreaResp")?.value || "";
       const fecha = document.getElementById("carFechaCierre")?.value || null;
-      const comentario = document.getElementById("carComentario")?.value.trim() || null;
+      const comentario = document.getElementById("carComentario")?.value.trim() || "";
       const revision = document.getElementById("carRevision")?.checked ?? true;
       if (!responsable) { toast("Escribe el nombre del responsable.", "error"); return; }
       if (!area) { toast("Selecciona el área del responsable.", "error"); return; }
+      if (comentario.length < 5) { toast("Escribe la solución dada (mínimo 5 caracteres).", "error"); return; }
       if (!CAR_FIRMA) { toast("Falta la firma del responsable.", "error"); return; }
 
       try {
+        const files = [...(document.getElementById("carEvidenciaCierre")?.files || [])];
+        const evidencias = files.length ? await subirEvidenciasCierre(files) : [];
         await api(`/car/${id}/cierre`, {
           method: "POST",
           token: getToken(),
@@ -1163,9 +1197,10 @@
             comentario_cierre: comentario,
             fecha_cierre: fecha,
             revision,
+            evidencias,
           },
         });
-        toast("Hallazgo cerrado. La parte 5 quedó registrada.", "ok");
+        toast("Hallazgo cerrado con la solución registrada.", "ok");
         cerrarModal();
         cargarCar();
       } catch (e) {
@@ -1347,11 +1382,11 @@
       // RDS (seguridad/fatiga) no esté disponible en este equipo.
       try {
         const cc = await api("/car/catalogos", { token: getToken() });
-        renderCatalogo("catAreasCar", cc.areas || [], "car-area");
+        renderZonasCar(cc.zonas || []);
       } catch (e) {
         if (/401|clave/i.test(e.message)) {
           if (getToken() === "demo") {
-            renderCatalogo("catAreasCar", [], "car-area");
+            renderZonasCar([]);
           } else {
             clearToken(); location.reload(); return;
           }
@@ -1383,6 +1418,86 @@
         </div>`).join("");
     }
 
+    function renderZonasCar(zonas) {
+      const el = document.getElementById("catZonasCar");
+      if (!el) return;
+      if (!zonas || !zonas.length) {
+        el.innerHTML = '<p class="py-4 text-sm text-slate-400">Aún no hay zonas.</p>';
+        return;
+      }
+      el.innerHTML = zonas.map((z) => `
+        <div class="rounded-xl border border-slate-200 p-3" data-zona="${z.id_zona}">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="font-semibold text-slate-800">${esc(z.nombre)}</div>
+            <div class="text-xs text-slate-400">${(z.areas || []).length} área(s)</div>
+          </div>
+          <div class="mt-2 grid gap-2 sm:grid-cols-[1fr_1fr_90px_auto]">
+            <input data-lat="${z.id_zona}" type="number" step="any" value="${z.lat ?? ""}" placeholder="Latitud"
+                   class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            <input data-lng="${z.id_zona}" type="number" step="any" value="${z.lng ?? ""}" placeholder="Longitud"
+                   class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            <input data-radio="${z.id_zona}" type="number" min="10" step="10" value="${z.radio_m ?? 300}"
+                   class="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            <button type="button" data-save-zona="${z.id_zona}"
+                    class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900">Guardar geocerca</button>
+          </div>
+          <div class="mt-2 flex flex-wrap items-center gap-1.5">
+            ${(z.areas || []).map((a) => `<span class="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-xs text-teal-700 ring-1 ring-teal-200">
+              ${esc(a.nombre)}
+              <button type="button" data-del-area="${z.id_zona}:${a.id}" class="text-teal-500 hover:text-red-600" title="Quitar de la zona">×</button>
+            </span>`).join("") || '<span class="text-xs text-slate-400">Sin áreas</span>'}
+          </div>
+          <div class="mt-2 flex gap-2">
+            <input data-new-area="${z.id_zona}" maxlength="120" placeholder="Nueva área para esta zona"
+                   class="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+            <button type="button" data-add-area="${z.id_zona}"
+                    class="rounded-lg border border-teal-300 bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-100">Agregar área</button>
+          </div>
+        </div>`).join("");
+    }
+
+    document.getElementById("catZonasCar").addEventListener("click", async (ev) => {
+      const save = ev.target.closest("[data-save-zona]");
+      const add = ev.target.closest("[data-add-area]");
+      const del = ev.target.closest("[data-del-area]");
+      try {
+        if (save) {
+          const id = save.dataset.saveZona;
+          const lat = document.querySelector(`[data-lat="${id}"]`).value;
+          const lng = document.querySelector(`[data-lng="${id}"]`).value;
+          const radio = document.querySelector(`[data-radio="${id}"]`).value;
+          await api(`/car/zonas/${id}`, {
+            method: "PUT", token: getToken(),
+            body: {
+              lat: lat === "" ? null : Number(lat),
+              lng: lng === "" ? null : Number(lng),
+              radio_m: radio === "" ? 300 : Number(radio),
+            },
+          });
+          toast("Geocerca guardada.", "ok");
+          cargarCatalogosAdmin();
+        }
+        if (add) {
+          const id = add.dataset.addArea;
+          const input = document.querySelector(`[data-new-area="${id}"]`);
+          const nombre = input.value.trim();
+          if (nombre.length < 2) { toast("Escribe un área válida.", "error"); input.focus(); return; }
+          await api("/car/areas", { method: "POST", token: getToken(), body: { nombre, id_zona: Number(id) } });
+          input.value = "";
+          toast("Área agregada a la zona.", "ok");
+          cargarCatalogosAdmin();
+        }
+        if (del) {
+          const [idZona, idArea] = del.dataset.delArea.split(":");
+          await api(`/car/zonas/${idZona}/areas/${idArea}`, { method: "DELETE", token: getToken() });
+          toast("Área quitada de la zona.", "ok");
+          cargarCatalogosAdmin();
+        }
+      } catch (e) {
+        toast(e.message, "error");
+      }
+    });
+
     async function agregarCatalogo(tipo, inputId) {
       const input = document.getElementById(inputId);
       const nombre = input.value.trim();
@@ -1410,19 +1525,32 @@
       e.preventDefault();
       agregarCatalogo("areas", "nuevaArea");
     });
-    document.getElementById("formAreaCar").addEventListener("submit", async (e) => {
+    document.getElementById("formZonaCar").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = document.getElementById("nuevaAreaCar");
-      const nombre = input.value.trim();
+      const nombre = document.getElementById("nuevaZonaCar").value.trim();
+      const lat = document.getElementById("nuevaZonaLat").value;
+      const lng = document.getElementById("nuevaZonaLng").value;
+      const radio = document.getElementById("nuevaZonaRadio").value;
       if (nombre.length < 2) {
-        toast("Escribe un área o departamento de al menos 2 caracteres.", "error");
-        input.focus();
+        toast("Escribe el nombre de la zona.", "error");
+        document.getElementById("nuevaZonaCar").focus();
         return;
       }
       try {
-        await api("/car/areas", { method: "POST", body: { nombre }, token: getToken() });
-        input.value = "";
-        toast("Área CAR agregada al catálogo", "ok");
+        await api("/car/zonas", {
+          method: "POST", token: getToken(),
+          body: {
+            nombre,
+            lat: lat === "" ? null : Number(lat),
+            lng: lng === "" ? null : Number(lng),
+            radio_m: radio === "" ? 300 : Number(radio),
+          },
+        });
+        document.getElementById("nuevaZonaCar").value = "";
+        document.getElementById("nuevaZonaLat").value = "";
+        document.getElementById("nuevaZonaLng").value = "";
+        document.getElementById("nuevaZonaRadio").value = "300";
+        toast("Zona agregada.", "ok");
         cargarCatalogosAdmin();
       } catch (err) {
         if (/401|clave/i.test(err.message)) { clearToken(); location.reload(); }
@@ -1449,17 +1577,6 @@
         cargarCatalogosAdmin();
       } catch (err) { toast(err.message, "error"); }
     });
-    document.getElementById("catAreasCar").addEventListener("click", async (e) => {
-      const btn = e.target.closest("[data-del-car-area]");
-      if (!btn) return;
-      if (!confirm("¿Quitar esta área del catálogo CAR? Las tarjetas ya guardadas no cambian.")) return;
-      try {
-        await api(`/car/areas/${btn.dataset.delCarArea}`, { method: "DELETE", token: getToken() });
-        toast("Área CAR quitada", "ok");
-        cargarCatalogosAdmin();
-      } catch (err) { toast(err.message, "error"); }
-    });
-
     document.getElementById("tabFatiga").addEventListener("click", () => setTab("fatiga"));
     document.getElementById("tabSst").addEventListener("click", () => setTab("sst"));
     document.getElementById("tabIndicadores").addEventListener("click", () => setTab("indicadores"));

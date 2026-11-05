@@ -15,7 +15,7 @@ from fastapi import (
     APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile,
 )
 from fastapi.responses import FileResponse
-from sqlalchemy import String, func, or_, select
+from sqlalchemy import String, delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_admin, require_reports, role_for
@@ -23,10 +23,13 @@ from ..db import get_db as main_get_db
 from ..models import Usuario
 from ..tz import ahora, hoy
 from .db import ROOT, get_db, init_local_schema
-from .models import CarArea, CarEvidencia, CarTarjeta
+from .models import (
+    CarArea, CarEvidencia, CarTarjeta, CarUbicacion, CarZona, CarZonaArea,
+)
 from .schemas import (
     CarAreaIn, CarAreaOut, CarCatalogosOut, CarCierreIn, CarDetalleOut,
     CarEmpleadoOut, CarEvidenciaOut, CarListaOut, CarTarjetaIn,
+    CarZonaIn, CarZonaOut, CarZonaUpdate,
 )
 
 router = APIRouter(prefix="/api/car", tags=["CAR · Tarjeta de riesgos"])
@@ -118,7 +121,7 @@ def _ev_out(e: CarEvidencia) -> CarEvidenciaOut:
     )
 
 
-def _lista_out(t: CarTarjeta) -> CarListaOut:
+def _lista_out(t: CarTarjeta, ub: Optional[CarUbicacion] = None) -> CarListaOut:
     return CarListaOut(
         id_tarjeta=t.id_tarjeta,
         folio=t.folio,
@@ -126,6 +129,7 @@ def _lista_out(t: CarTarjeta) -> CarListaOut:
         observador=t.observador,
         num_empleado=t.num_empleado,
         area=t.area,
+        zona=ub.zona_nombre if ub else None,
         tipo=t.tipo,
         clasificacion=t.clasificacion,
         controlado=t.controlado,
@@ -137,11 +141,14 @@ def _lista_out(t: CarTarjeta) -> CarListaOut:
     )
 
 
-def _detalle_out(t: CarTarjeta) -> CarDetalleOut:
-    base = _lista_out(t)
+def _detalle_out(t: CarTarjeta, ub: Optional[CarUbicacion] = None) -> CarDetalleOut:
+    base = _lista_out(t, ub)
     return CarDetalleOut(
         **base.model_dump(),
         descripcion=t.descripcion,
+        lat=ub.lat if ub else None,
+        lng=ub.lng if ub else None,
+        origen_geo=ub.origen if ub else None,
         acciones_inmediatas=t.acciones_inmediatas,
         acciones_definitivas=t.acciones_definitivas,
         fecha_compromiso=t.fecha_compromiso,
@@ -193,12 +200,103 @@ def empleados(q: str = Query(default="", max_length=80), db: Session = Depends(m
         ) from exc
 
 
+def _zonas_out(db: Session) -> List[CarZonaOut]:
+    zonas = db.scalars(
+        select(CarZona).where(CarZona.activo == 1).order_by(CarZona.nombre)
+    ).all()
+    areas = db.scalars(select(CarArea).where(CarArea.activo == 1).order_by(CarArea.nombre)).all()
+    area_map = {a.id_area: a for a in areas}
+    mapping = db.scalars(select(CarZonaArea)).all()
+    out = []
+    for z in zonas:
+        ids = [m.id_area for m in mapping if m.id_zona == z.id_zona]
+        out.append(CarZonaOut(
+            id_zona=z.id_zona,
+            nombre=z.nombre,
+            lat=z.lat,
+            lng=z.lng,
+            radio_m=z.radio_m,
+            areas=[
+                CarAreaOut(id=area_map[i].id_area, nombre=area_map[i].nombre)
+                for i in ids if i in area_map
+            ],
+        ))
+    return out
+
+
 @router.get("/catalogos", response_model=CarCatalogosOut)
 def catalogos(db: Session = Depends(get_db)):
     areas = db.scalars(
         select(CarArea).where(CarArea.activo == 1).order_by(CarArea.nombre)
     ).all()
-    return CarCatalogosOut(areas=[CarAreaOut(id=a.id_area, nombre=a.nombre) for a in areas])
+    return CarCatalogosOut(
+        areas=[CarAreaOut(id=a.id_area, nombre=a.nombre) for a in areas],
+        zonas=_zonas_out(db),
+    )
+
+
+# --------------------------------------------------------------------------
+# Zonas y geocercas (administradas desde el panel)
+# --------------------------------------------------------------------------
+@router.post("/zonas", response_model=CarZonaOut, dependencies=[Depends(require_admin)])
+def agregar_zona(payload: CarZonaIn, db: Session = Depends(get_db)):
+    nombre = payload.nombre.strip().upper()
+    if len(nombre) < 2:
+        raise HTTPException(status_code=422, detail="Escribe una zona válida.")
+    existing = db.scalar(select(CarZona).where(func.lower(CarZona.nombre) == func.lower(nombre)))
+    if existing:
+        existing.activo = 1
+        existing.nombre = nombre
+        if payload.lat is not None: existing.lat = payload.lat
+        if payload.lng is not None: existing.lng = payload.lng
+        existing.radio_m = payload.radio_m
+        db.commit()
+        db.refresh(existing)
+        return CarZonaOut(id_zona=existing.id_zona, nombre=existing.nombre,
+                          lat=existing.lat, lng=existing.lng, radio_m=existing.radio_m)
+    item = CarZona(nombre=nombre, lat=payload.lat, lng=payload.lng,
+                   radio_m=payload.radio_m, activo=1)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return CarZonaOut(id_zona=item.id_zona, nombre=item.nombre,
+                      lat=item.lat, lng=item.lng, radio_m=item.radio_m)
+
+
+@router.put("/zonas/{id_zona}", response_model=CarZonaOut, dependencies=[Depends(require_admin)])
+def actualizar_zona(id_zona: int, payload: CarZonaUpdate, db: Session = Depends(get_db)):
+    z = db.get(CarZona, id_zona)
+    if not z:
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    if payload.lat is not None:
+        z.lat = payload.lat
+    if payload.lng is not None:
+        z.lng = payload.lng
+    if payload.radio_m is not None:
+        z.radio_m = payload.radio_m
+    db.commit()
+    db.refresh(z)
+    return CarZonaOut(id_zona=z.id_zona, nombre=z.nombre, lat=z.lat, lng=z.lng, radio_m=z.radio_m)
+
+
+@router.post("/zonas/{id_zona}/areas/{id_area}", dependencies=[Depends(require_admin)])
+def asignar_area_zona(id_zona: int, id_area: int, db: Session = Depends(get_db)):
+    if not db.get(CarZona, id_zona):
+        raise HTTPException(status_code=404, detail="Zona no encontrada")
+    if not db.get(CarArea, id_area):
+        raise HTTPException(status_code=404, detail="Área no encontrada")
+    if not db.get(CarZonaArea, (id_zona, id_area)):
+        db.add(CarZonaArea(id_zona=id_zona, id_area=id_area))
+        db.commit()
+    return {"ok": True}
+
+
+@router.delete("/zonas/{id_zona}/areas/{id_area}", dependencies=[Depends(require_admin)])
+def quitar_area_zona(id_zona: int, id_area: int, db: Session = Depends(get_db)):
+    db.execute(delete(CarZonaArea).where(
+        CarZonaArea.id_zona == id_zona, CarZonaArea.id_area == id_area))
+    db.commit()
+    return {"ok": True}
 
 
 @router.post("/areas", response_model=CarAreaOut, dependencies=[Depends(require_admin)])
@@ -206,17 +304,21 @@ def agregar_area(payload: CarAreaIn, db: Session = Depends(get_db)):
     nombre = payload.nombre.strip()
     if len(nombre) < 2:
         raise HTTPException(status_code=422, detail="Escribe un área válida.")
+    if payload.id_zona and not db.get(CarZona, payload.id_zona):
+        raise HTTPException(status_code=422, detail="La zona no existe.")
     existing = db.scalar(select(CarArea).where(func.lower(CarArea.nombre) == func.lower(nombre)))
     if existing:
         existing.activo = 1
         existing.nombre = nombre
-        db.commit()
-        db.refresh(existing)
-        return CarAreaOut(id=existing.id_area, nombre=existing.nombre)
-    item = CarArea(nombre=nombre, activo=1)
-    db.add(item)
+        item = existing
+    else:
+        item = CarArea(nombre=nombre, activo=1)
+        db.add(item)
     db.commit()
     db.refresh(item)
+    if payload.id_zona and not db.get(CarZonaArea, (payload.id_zona, item.id_area)):
+        db.add(CarZonaArea(id_zona=payload.id_zona, id_area=item.id_area))
+        db.commit()
     return CarAreaOut(id=item.id_area, nombre=item.nombre)
 
 
@@ -226,6 +328,7 @@ def borrar_area(id_area: int, db: Session = Depends(get_db)):
     if not item:
         raise HTTPException(status_code=404, detail="Área no encontrada")
     item.activo = 0
+    db.execute(delete(CarZonaArea).where(CarZonaArea.id_area == id_area))
     db.commit()
     return {"ok": True}
 
@@ -346,16 +449,23 @@ def crear_tarjeta(
     if not area:
         raise HTTPException(status_code=422, detail="Selecciona un área registrada en el catálogo CAR.")
 
+    zona = None
+    if payload.id_zona:
+        zona = db.get(CarZona, payload.id_zona)
+        if not zona or zona.activo != 1:
+            raise HTTPException(status_code=422, detail="Selecciona una zona válida.")
+        # Si la zona ya tiene áreas configuradas, el área debe pertenecer a ella.
+        configuradas = db.scalar(
+            select(func.count()).select_from(CarZonaArea).where(CarZonaArea.id_zona == zona.id_zona)
+        ) or 0
+        if configuradas and not db.get(CarZonaArea, (zona.id_zona, area.id_area)):
+            raise HTTPException(
+                status_code=422,
+                detail="El área no pertenece a la zona seleccionada.",
+            )
+
     if not payload.firma_emisor.startswith("data:image/png;base64,"):
         raise HTTPException(status_code=422, detail="Falta la firma del emisor.")
-    if not (payload.acciones_inmediatas or payload.acciones_definitivas):
-        raise HTTPException(status_code=422, detail="Registra al menos una acción inmediata o definitiva.")
-    if payload.controlado == "NO" and not payload.acciones_inmediatas:
-        raise HTTPException(status_code=422, detail="Un riesgo no controlado requiere acción inmediata.")
-    if payload.acciones_definitivas and not payload.fecha_compromiso:
-        raise HTTPException(status_code=422, detail="Las acciones definitivas requieren fecha compromiso.")
-    if payload.fecha_compromiso and payload.fecha_compromiso < payload.fecha:
-        raise HTTPException(status_code=422, detail="La fecha compromiso no puede ser anterior a la emisión.")
 
     evidencias: List[CarEvidencia] = []
     if payload.evidencias:
@@ -391,6 +501,14 @@ def crear_tarjeta(
     )
     db.add(tarjeta)
     db.flush()
+    db.add(CarUbicacion(
+        id_tarjeta=tarjeta.id_tarjeta,
+        id_zona=zona.id_zona if zona else None,
+        zona_nombre=zona.nombre if zona else None,
+        lat=payload.lat,
+        lng=payload.lng,
+        origen=(payload.origen_geo or "MANUAL")[:10],
+    ))
     for ev in evidencias:
         ev.id_tarjeta = tarjeta.id_tarjeta
     db.commit()
@@ -472,7 +590,13 @@ def listar(
             CarTarjeta.responsable.like(like),
         ))
     stmt = stmt.order_by(CarTarjeta.fecha.desc(), CarTarjeta.id_tarjeta.desc()).limit(limit)
-    return [_lista_out(t) for t in db.scalars(stmt).all()]
+    rows = db.scalars(stmt).all()
+    ids = [t.id_tarjeta for t in rows]
+    ubs = {}
+    if ids:
+        for u in db.scalars(select(CarUbicacion).where(CarUbicacion.id_tarjeta.in_(ids))).all():
+            ubs[u.id_tarjeta] = u
+    return [_lista_out(t, ubs.get(t.id_tarjeta)) for t in rows]
 
 
 @router.get("/{id_tarjeta}", response_model=CarDetalleOut, dependencies=[Depends(require_reports)])
@@ -484,7 +608,7 @@ def detalle(id_tarjeta: int, db: Session = Depends(get_db)):
     )
     if not t:
         raise HTTPException(status_code=404, detail="Tarjeta CAR no encontrada")
-    return _detalle_out(t)
+    return _detalle_out(t, db.get(CarUbicacion, id_tarjeta))
 
 
 @router.post("/{id_tarjeta}/cierre", dependencies=[Depends(require_admin)])
@@ -508,10 +632,24 @@ def cerrar(id_tarjeta: int, payload: CarCierreIn, db: Session = Depends(get_db))
     if not area:
         raise HTTPException(status_code=422, detail="Selecciona un área del catálogo CAR.")
 
+    # Evidencia opcional del cierre
+    if payload.evidencias:
+        ids = list(dict.fromkeys(payload.evidencias))
+        evs = db.scalars(
+            select(CarEvidencia).where(
+                CarEvidencia.id_evidencia.in_(ids),
+                CarEvidencia.id_tarjeta.is_(None),
+            )
+        ).all()
+        if len(evs) != len(ids):
+            raise HTTPException(status_code=422, detail="Una evidencia no existe o ya fue utilizada.")
+        for ev in evs:
+            ev.id_tarjeta = t.id_tarjeta
+
     t.responsable = payload.responsable.strip()
     t.area_responsable = area.nombre
     t.firma_responsable = payload.firma_responsable
-    t.comentario_cierre = (payload.comentario_cierre or "").strip() or None
+    t.comentario_cierre = payload.comentario_cierre.strip()
     t.revision = 1 if payload.revision else 0
     t.fecha_cierre = payload.fecha_cierre or hoy()
     t.estado = "CERRADO"

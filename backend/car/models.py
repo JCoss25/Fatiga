@@ -2,7 +2,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import BigInteger, Date, DateTime, ForeignKey, Integer, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Date, DateTime, Float, ForeignKey, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..tz import ahora
@@ -22,6 +22,39 @@ class CarArea(Base):
     id_area: Mapped[int] = mapped_column(SmallIntPK, primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(String(120), unique=True)
     activo: Mapped[int] = mapped_column(SmallInteger, default=1)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
+
+
+class CarZona(Base):
+    """Zona operativa con geocerca (centro + radio)."""
+
+    __tablename__ = "car_zonas"
+
+    id_zona: Mapped[int] = mapped_column(SmallIntPK, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(60), unique=True)
+    lat: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    lng: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    radio_m: Mapped[int] = mapped_column(Integer, default=300)
+    activo: Mapped[int] = mapped_column(SmallInteger, default=1)
+    creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
+
+
+class CarZonaArea(Base):
+    __tablename__ = "car_zona_areas"
+
+    id_zona: Mapped[int] = mapped_column(SmallIntPK, primary_key=True)
+    id_area: Mapped[int] = mapped_column(SmallIntPK, primary_key=True)
+
+
+class CarUbicacion(Base):
+    __tablename__ = "car_ubicaciones"
+
+    id_tarjeta: Mapped[int] = mapped_column(BigIntPK, primary_key=True)
+    id_zona: Mapped[Optional[int]] = mapped_column(SmallIntPK, nullable=True)
+    zona_nombre: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    lat: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    lng: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    origen: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=ahora)
 
 

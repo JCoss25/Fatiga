@@ -10,12 +10,36 @@ class CarAreaOut(BaseModel):
     nombre: str
 
 
+class CarZonaOut(BaseModel):
+    id_zona: int
+    nombre: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    radio_m: int = 300
+    areas: List[CarAreaOut] = Field(default_factory=list)
+
+
 class CarCatalogosOut(BaseModel):
     areas: List[CarAreaOut]
+    zonas: List[CarZonaOut] = Field(default_factory=list)
+
+
+class CarZonaIn(BaseModel):
+    nombre: str = Field(min_length=2, max_length=60)
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    radio_m: int = Field(default=300, ge=10, le=50000)
+
+
+class CarZonaUpdate(BaseModel):
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    radio_m: Optional[int] = Field(default=None, ge=10, le=50000)
 
 
 class CarAreaIn(BaseModel):
     nombre: str = Field(min_length=2, max_length=120)
+    id_zona: Optional[int] = None
 
 
 class CarEmpleadoOut(BaseModel):
@@ -41,6 +65,10 @@ class CarEvidenciaOut(BaseModel):
 class CarTarjetaIn(BaseModel):
     fecha: date
     id_usuario: int = Field(gt=0)
+    id_zona: Optional[int] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    origen_geo: Optional[str] = None
     area: str = Field(min_length=2, max_length=120)
     tipo: Literal["ACTO_SEGURO", "CONDICION_INSEGURA", "ACTO_INSEGURO", "FALLA_ADMINISTRATIVA"]
     descripcion: str = Field(min_length=10, max_length=2000)
@@ -57,9 +85,10 @@ class CarCierreIn(BaseModel):
     responsable: str = Field(min_length=2, max_length=120)
     area_responsable: str = Field(min_length=2, max_length=120)
     firma_responsable: str = Field(min_length=20, max_length=500000)
-    comentario_cierre: Optional[str] = Field(default=None, max_length=2000)
+    comentario_cierre: str = Field(min_length=5, max_length=4000)
     fecha_cierre: Optional[date] = None
     revision: bool = True
+    evidencias: List[int] = Field(default_factory=list, max_length=20)
 
 
 class CarListaOut(BaseModel):
@@ -69,6 +98,7 @@ class CarListaOut(BaseModel):
     observador: str
     num_empleado: Optional[int] = None
     area: str
+    zona: Optional[str] = None
     tipo: str
     clasificacion: str
     controlado: str
@@ -81,6 +111,9 @@ class CarListaOut(BaseModel):
 
 class CarDetalleOut(CarListaOut):
     descripcion: str
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    origen_geo: Optional[str] = None
     acciones_inmediatas: Optional[str] = None
     acciones_definitivas: Optional[str] = None
     fecha_compromiso: Optional[date] = None
